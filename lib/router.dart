@@ -73,7 +73,9 @@ GoRouter createRouter({String initialLocation = '/login'}) {
       GoRoute(
         path: '/dev-input',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const DevInputScreen(),
+        builder: (context, state) => DevInputScreen(
+          autoAnalyzeLatest: state.uri.queryParameters['auto'] == '1',
+        ),
       ),
     ],
   );

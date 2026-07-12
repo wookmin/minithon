@@ -1,12 +1,22 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/ui/soft_card.dart';
 import '../care/care_providers.dart';
 
 class RecordingSetupScreen extends ConsumerWidget {
   const RecordingSetupScreen({super.key});
+
+  /// 백그라운드 통화 감지·녹음 분석에 필요한 권한을 한 번에 요청. (Android)
+  Future<void> _requestPermissions() async {
+    if (!Platform.isAndroid) return;
+    await [Permission.phone, Permission.audio, Permission.notification]
+        .request();
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,20 +47,21 @@ class RecordingSetupScreen extends ConsumerWidget {
           const SizedBox(height: 10),
           const _SetupStep(
             number: '2',
-            title: '녹음 파일 분석 준비',
-            description: '다음 단계에서 MediaStore로 최신 녹음 파일을 읽어 STT에 연결합니다.',
+            title: '권한 허용 (전화 상태·오디오·알림)',
+            description: '통화 종료를 감지하고 최신 녹음 파일을 읽기 위해 권한을 한 번 허용합니다.',
           ),
           const SizedBox(height: 10),
           const _SetupStep(
             number: '3',
-            title: '알림으로 바로 이동',
-            description: '분석 결과가 병원·심부름·전문가 니즈면 해당 탭으로 이동합니다.',
+            title: '통화 끝나면 자동 안내',
+            description: '통화가 끝나면 알림이 오고, 탭하면 최근 녹음을 분석해 니즈를 골라냅니다.',
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: completed
                 ? () => context.pop()
                 : () async {
+                    await _requestPermissions();
                     await ref.read(recordingSetupProvider.notifier).complete();
                     if (context.mounted) context.pop();
                   },

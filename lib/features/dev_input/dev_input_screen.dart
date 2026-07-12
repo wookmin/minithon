@@ -1,6 +1,10 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/notifications/notification_providers.dart';
 import '../../core/theme/app_colors_x.dart';
@@ -11,13 +15,17 @@ import '../classification/classification_providers.dart';
 import '../classification/need_category.dart';
 import '../classification/need_classification_result.dart';
 import '../recording/audio_transcription_providers.dart';
+import '../recording/recording_repository.dart';
 import '../stt/stt_providers.dart';
 
 /// 통화 텍스트 분석 화면. (실제 통화 분석 결과 주입 대체)
 ///
 /// 텍스트 입력 → 분류 → 니즈가 있으면 알림 표시. 알림 탭 시 해당 탭으로 이동.
 class DevInputScreen extends ConsumerStatefulWidget {
-  const DevInputScreen({super.key});
+  const DevInputScreen({super.key, this.autoAnalyzeLatest = false});
+
+  /// 통화 종료 알림을 탭해 진입한 경우 true — 최근 녹음을 자동 분석한다.
+  final bool autoAnalyzeLatest;
 
   @override
   ConsumerState<DevInputScreen> createState() => _DevInputScreenState();
@@ -29,6 +37,16 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
   bool _isAnalyzing = false;
   bool _isListening = false;
   bool _isTranscribing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autoAnalyzeLatest) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _analyzeLatestRecording(),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -68,12 +86,52 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
       return;
     }
 
+    await _transcribeAndAnalyze(bytes, _mimeForExtension(file.extension));
+  }
+
+  Future<void> _analyzeLatestRecording() async {
+    if (_isAnalyzing || _isTranscribing) return;
+
+    final granted = await _ensureAudioPermission();
+    if (!mounted) return;
+    if (!granted) {
+      _showMessage('녹음 파일을 읽으려면 오디오 접근 권한이 필요해요');
+      return;
+    }
+
+    setState(() => _isTranscribing = true);
+    final LatestRecording? recording;
+    try {
+      recording = await ref.read(recordingRepositoryProvider).latest();
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _isTranscribing = false);
+      _showMessage('녹음을 불러오지 못했어요: $error');
+      return;
+    }
+    if (!mounted) return;
+
+    if (recording == null) {
+      setState(() => _isTranscribing = false);
+      _showMessage('최근 녹음 파일을 찾지 못했어요');
+      return;
+    }
+
+    await _transcribeAndAnalyze(recording.bytes, recording.mimeType);
+  }
+
+  Future<bool> _ensureAudioPermission() async {
+    final status = await Permission.audio.request();
+    if (status.isGranted) return true;
+    // 구형 안드로이드는 저장소 권한으로 폴백.
+    final storage = await Permission.storage.request();
+    return storage.isGranted;
+  }
+
+  Future<void> _transcribeAndAnalyze(Uint8List bytes, String mimeType) async {
     setState(() => _isTranscribing = true);
     final service = ref.read(audioTranscriptionServiceProvider);
-    final result = await service.transcribe(
-      bytes: bytes,
-      mimeType: _mimeForExtension(file.extension),
-    );
+    final result = await service.transcribe(bytes: bytes, mimeType: mimeType);
     if (!mounted) return;
     setState(() => _isTranscribing = false);
 
@@ -276,6 +334,16 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
                       : const Icon(Icons.graphic_eq_rounded, size: 20),
                   label: Text(_isTranscribing ? '녹음 파일 분석 중' : '녹음 파일 올리기'),
                 ),
+                if (Platform.isAndroid) ...[
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: (_isAnalyzing || _isTranscribing)
+                        ? null
+                        : _analyzeLatestRecording,
+                    icon: const Icon(Icons.history_rounded, size: 20),
+                    label: const Text('최근 통화 녹음 분석'),
+                  ),
+                ],
               ],
             ),
           ),

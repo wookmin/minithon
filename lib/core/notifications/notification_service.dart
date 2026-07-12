@@ -81,7 +81,13 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
     );
-    const iosDetails = DarwinNotificationDetails();
+    // iOS는 앱이 포그라운드일 때 이 옵션이 없으면 배너를 띄우지 않는다.
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBanner: true,
+      presentList: true,
+      presentSound: true,
+    );
 
     await _plugin.show(
       id: category.index,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -8,6 +10,7 @@ import 'app.dart';
 import 'core/notifications/notification_providers.dart';
 import 'core/notifications/notification_service.dart';
 import 'features/care/care_providers.dart';
+import 'features/recording/recording_repository.dart';
 import 'router.dart';
 
 Future<void> main() async {
@@ -27,6 +30,17 @@ Future<void> main() async {
   final launchRoute = await notificationService.initialRoute();
   if (launchRoute != null) {
     router.go(launchRoute);
+  }
+
+  // 안드로이드: 통화 종료 알림으로 실행/재개된 경우 최근 녹음 분석 화면으로.
+  if (Platform.isAndroid) {
+    final recordingRepository = RecordingRepository();
+    recordingRepository.setAnalyzeListener(
+      () => router.go('/dev-input?auto=1'),
+    );
+    if (await recordingRepository.consumePendingAnalyze()) {
+      router.go('/dev-input?auto=1');
+    }
   }
 
   runApp(
