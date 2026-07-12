@@ -46,9 +46,7 @@ class AudioTranscriptionService {
       return const AudioTranscriptionResult.failure('빈 파일입니다');
     }
     if (bytes.length > _maxBytes) {
-      return const AudioTranscriptionResult.failure(
-        '파일이 너무 큽니다 (18MB 이하만 지원)',
-      );
+      return const AudioTranscriptionResult.failure('파일이 너무 큽니다 (18MB 이하만 지원)');
     }
 
     final uri = Uri.https(

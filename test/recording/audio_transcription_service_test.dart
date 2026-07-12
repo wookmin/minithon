@@ -50,8 +50,7 @@ void main() {
     expect(result.isSuccess, isTrue);
     expect(result.text, '허리가 아프다고 하셨어요');
 
-    final parts =
-        (sentBody['contents'] as List).first['parts'] as List;
+    final parts = (sentBody['contents'] as List).first['parts'] as List;
     final inlineData = parts.last['inlineData'] as Map<String, dynamic>;
     expect(inlineData['mimeType'], 'audio/mp4');
     expect(inlineData['data'], base64Encode(sampleBytes));

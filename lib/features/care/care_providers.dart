@@ -107,8 +107,20 @@ class RecordingSetupNotifier extends AsyncNotifier<RecordingSetupState> {
   Future<void> complete() async {
     final next = RecordingSetupState(
       isCompleted: true,
+      backgroundDetectionEnabled: true,
       completedAt: DateTime.now(),
     );
+    await _persist(next);
+  }
+
+  Future<void> setBackgroundDetectionEnabled(bool enabled) async {
+    final current =
+        state.asData?.value ?? const RecordingSetupState.incomplete();
+    final next = current.copyWith(backgroundDetectionEnabled: enabled);
+    await _persist(next);
+  }
+
+  Future<void> _persist(RecordingSetupState next) async {
     state = AsyncData(next);
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_recordingSetupKey, jsonEncode(next.toJson()));

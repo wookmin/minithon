@@ -122,12 +122,18 @@ class CareExpert {
 }
 
 class RecordingSetupState {
-  const RecordingSetupState({required this.isCompleted, this.completedAt});
+  const RecordingSetupState({
+    required this.isCompleted,
+    required this.backgroundDetectionEnabled,
+    this.completedAt,
+  });
 
   factory RecordingSetupState.fromJson(Map<String, dynamic> json) {
     final completedAt = json['completedAt'];
     return RecordingSetupState(
       isCompleted: json['isCompleted'] as bool? ?? false,
+      backgroundDetectionEnabled:
+          json['backgroundDetectionEnabled'] as bool? ?? false,
       completedAt: completedAt is String
           ? DateTime.tryParse(completedAt)
           : null,
@@ -136,14 +142,30 @@ class RecordingSetupState {
 
   const RecordingSetupState.incomplete()
     : isCompleted = false,
+      backgroundDetectionEnabled = false,
       completedAt = null;
 
   final bool isCompleted;
+  final bool backgroundDetectionEnabled;
   final DateTime? completedAt;
+
+  RecordingSetupState copyWith({
+    bool? isCompleted,
+    bool? backgroundDetectionEnabled,
+    DateTime? completedAt,
+  }) {
+    return RecordingSetupState(
+      isCompleted: isCompleted ?? this.isCompleted,
+      backgroundDetectionEnabled:
+          backgroundDetectionEnabled ?? this.backgroundDetectionEnabled,
+      completedAt: completedAt ?? this.completedAt,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
       'isCompleted': isCompleted,
+      'backgroundDetectionEnabled': backgroundDetectionEnabled,
       'completedAt': completedAt?.toIso8601String(),
     };
   }

@@ -100,9 +100,19 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
     }
 
     setState(() => _isTranscribing = true);
-    final LatestRecording? recording;
+    final Uint8List? bytes;
+    final String name;
     try {
-      recording = await ref.read(recordingRepositoryProvider).latest();
+      final repository = ref.read(recordingRepositoryProvider);
+      final recordings = await repository.recent(limit: 10);
+      if (recordings.isEmpty) {
+        if (!mounted) return;
+        setState(() => _isTranscribing = false);
+        _showMessage('최근 녹음 파일을 찾지 못했어요');
+        return;
+      }
+      name = recordings.first.name;
+      bytes = await repository.readBytes(recordings.first.uri);
     } on Object catch (error) {
       if (!mounted) return;
       setState(() => _isTranscribing = false);
@@ -111,13 +121,13 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
     }
     if (!mounted) return;
 
-    if (recording == null) {
+    if (bytes == null) {
       setState(() => _isTranscribing = false);
-      _showMessage('최근 녹음 파일을 찾지 못했어요');
+      _showMessage('녹음 파일을 읽지 못했어요');
       return;
     }
 
-    await _transcribeAndAnalyze(recording.bytes, recording.mimeType);
+    await _transcribeAndAnalyze(bytes, _mimeForExtension(name.split('.').last));
   }
 
   Future<bool> _ensureAudioPermission() async {

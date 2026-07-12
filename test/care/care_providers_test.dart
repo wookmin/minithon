@@ -46,7 +46,15 @@ void main() {
 
     final completed = container.read(recordingSetupProvider).asData!.value;
     expect(completed.isCompleted, isTrue);
+    expect(completed.backgroundDetectionEnabled, isTrue);
     expect(completed.completedAt, isNotNull);
+
+    await container
+        .read(recordingSetupProvider.notifier)
+        .setBackgroundDetectionEnabled(false);
+
+    final disabled = container.read(recordingSetupProvider).asData!.value;
+    expect(disabled.backgroundDetectionEnabled, isFalse);
   });
 
   test('내 정보를 로컬 저장 provider에 저장한다', () async {

@@ -1,17 +1,19 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 기기에서 찾은 최근 녹음 파일.
-class LatestRecording {
-  const LatestRecording({
+/// MediaStore에서 조회한 녹음 메타데이터. 바이트는 [RecordingRepository.readBytes]로 별도 조회.
+class RemoteRecording {
+  const RemoteRecording({
     required this.name,
-    required this.bytes,
-    required this.mimeType,
+    required this.uri,
+    this.relativePath = '',
+    this.dateAdded,
   });
 
   final String name;
-  final Uint8List bytes;
-  final String mimeType;
+  final String uri;
+  final String relativePath;
+  final DateTime? dateAdded;
 }
 
 /// 안드로이드 네이티브(MediaStore)와 통신해 최근 통화 녹음을 가져오고,
@@ -22,22 +24,30 @@ class RecordingRepository {
 
   final MethodChannel _channel;
 
-  /// MediaStore에서 가장 최근 오디오 파일을 읽어온다. 없으면 null.
-  Future<LatestRecording?> latest() async {
-    final result = await _channel.invokeMapMethod<String, dynamic>(
-      'latestRecording',
+  /// MediaStore에서 최근 오디오 목록을 최신순으로 가져온다.
+  Future<List<RemoteRecording>> recent({int limit = 20}) async {
+    final result = await _channel.invokeMethod<List<dynamic>>(
+      'recentRecordings',
+      {'limit': limit},
     );
-    if (result == null) return null;
+    if (result == null) return const [];
 
-    final bytes = result['bytes'];
-    final name = result['name'];
-    if (bytes is! Uint8List || name is! String) return null;
+    return result.whereType<Map>().map((item) {
+      final rawDate = item['dateAdded'];
+      return RemoteRecording(
+        name: item['name'] as String? ?? 'recording',
+        uri: item['uri'] as String? ?? '',
+        relativePath: item['relativePath'] as String? ?? '',
+        dateAdded: rawDate is int
+            ? DateTime.fromMillisecondsSinceEpoch(rawDate * 1000)
+            : null,
+      );
+    }).where((recording) => recording.uri.isNotEmpty).toList();
+  }
 
-    return LatestRecording(
-      name: name,
-      bytes: bytes,
-      mimeType: result['mimeType'] as String? ?? 'audio/mpeg',
-    );
+  /// content:// URI의 파일 바이트를 읽어온다. 실패 시 null.
+  Future<Uint8List?> readBytes(String uri) {
+    return _channel.invokeMethod<Uint8List>('readRecording', {'uri': uri});
   }
 
   /// 통화 종료 알림을 탭해 앱이 실행됐는지 확인하고 플래그를 소비한다.
