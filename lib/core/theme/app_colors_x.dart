@@ -26,15 +26,15 @@ class AppColorsX extends ThemeExtension<AppColorsX> {
   final Color professionalSoft;
 
   static const light = AppColorsX(
-    canvas: Color(0xFFF2F3EE),
-    hairline: Color(0xFFE7E8E2),
-    textSecondary: Color(0xFF6C736B),
-    health: Color(0xFFC65D4B),
-    healthSoft: Color(0xFFF7E6E1),
-    general: Color(0xFFB77D2A),
-    generalSoft: Color(0xFFF6EAD3),
-    professional: Color(0xFF5A6FA6),
-    professionalSoft: Color(0xFFE4E8F3),
+    canvas: Color(0xFFF5F2EB),
+    hairline: Color(0xFFEAE4D8),
+    textSecondary: Color(0xFF77716A),
+    health: Color(0xFFBC6152),
+    healthSoft: Color(0xFFF3E7E0),
+    general: Color(0xFFAA7C38),
+    generalSoft: Color(0xFFF1E8D5),
+    professional: Color(0xFF5F6E97),
+    professionalSoft: Color(0xFFE4E7F0),
   );
 
   static const dark = AppColorsX(

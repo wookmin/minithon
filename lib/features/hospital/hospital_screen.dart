@@ -224,65 +224,160 @@ class _HospitalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final text = Theme.of(context).textTheme;
     return SoftCard(
       onTap: () {},
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconTile(
-            icon: Icons.local_hospital_rounded,
-            color: accent,
-            background: c.healthSoft,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  hospital.name,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  hospital.department,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  hospital.address,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: c.healthSoft,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: Text(
-                  hospital.distance,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+              _MapThumb(accent: accent, soft: c.healthSoft),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(hospital.name, style: text.titleMedium),
+                        ),
+                        const SizedBox(width: 8),
+                        _OpenBadge(isOpen: hospital.isOpenNow),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(hospital.department, style: text.bodyMedium),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.star_rounded, size: 15, color: accent),
+                        const SizedBox(width: 2),
+                        Text(
+                          hospital.rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        Text(
+                          ' (${hospital.reviewCount}) · ${hospital.distance}',
+                          style: TextStyle(
+                            color: c.textSecondary,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Icon(Icons.chevron_right_rounded, color: c.textSecondary),
             ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.schedule_rounded, size: 15, color: c.textSecondary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  hospital.hours,
+                  style: TextStyle(color: c.textSecondary, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.place_outlined, size: 18),
+                  label: const Text('길찾기'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                  ),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(
+                          content: Text('${hospital.name} · ${hospital.phone}'),
+                        ),
+                      );
+                  },
+                  icon: const Icon(Icons.call_rounded, size: 18),
+                  label: const Text('전화'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 지도 대신 쓰는 스타일 썸네일 (핀 아이콘 + 소프트 배경).
+class _MapThumb extends StatelessWidget {
+  const _MapThumb({required this.accent, required this.soft});
+
+  final Color accent;
+  final Color soft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 54,
+      height: 54,
+      decoration: BoxDecoration(
+        color: soft,
+        borderRadius: BorderRadius.circular(AppRadius.surface),
+      ),
+      child: Icon(Icons.location_on_rounded, color: accent, size: 26),
+    );
+  }
+}
+
+class _OpenBadge extends StatelessWidget {
+  const _OpenBadge({required this.isOpen});
+
+  final bool isOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final color = isOpen ? const Color(0xFF2E8B57) : c.textSecondary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            isOpen ? '진료중' : '마감',
+            style: TextStyle(
+              color: color,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

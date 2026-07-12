@@ -13,12 +13,12 @@ abstract final class AppTheme {
     scheme: const ColorScheme.light(
       primary: _brand,
       onPrimary: Colors.white,
-      primaryContainer: Color(0xFFDCEBE1),
+      primaryContainer: Color(0xFFDCE9DE),
       onPrimaryContainer: Color(0xFF15321F),
       secondary: _brand,
       surface: Colors.white,
-      onSurface: Color(0xFF1E241F),
-      surfaceContainerHighest: Color(0xFFEDEEE8),
+      onSurface: Color(0xFF20241E),
+      surfaceContainerHighest: Color(0xFFF0ECE1),
     ),
     colorsX: AppColorsX.light,
   );

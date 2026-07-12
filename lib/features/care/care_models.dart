@@ -103,6 +103,9 @@ class CareExpert {
     required this.rating,
     required this.career,
     required this.availableTime,
+    this.reviewCount = 0,
+    this.isCertified = false,
+    this.rehireRate = 0,
   });
 
   final String name;
@@ -111,6 +114,11 @@ class CareExpert {
   final double rating;
   final String career;
   final String availableTime;
+  final int reviewCount;
+  final bool isCertified;
+
+  /// 재이용률(%). 0이면 표시하지 않는다.
+  final int rehireRate;
 }
 
 class RecordingSetupState {
@@ -238,6 +246,9 @@ const demoExperts = [
     rating: 4.9,
     career: '복지 상담 8년',
     availableTime: '오늘 17:00 전화 상담',
+    reviewCount: 132,
+    isCertified: true,
+    rehireRate: 94,
   ),
   CareExpert(
     name: '이정호',
@@ -246,6 +257,9 @@ const demoExperts = [
     rating: 4.8,
     career: '방문 돌봄 6년',
     availableTime: '내일 10:30 방문 가능',
+    reviewCount: 87,
+    isCertified: true,
+    rehireRate: 91,
   ),
   CareExpert(
     name: '최민서',
@@ -254,5 +268,7 @@ const demoExperts = [
     rating: 4.7,
     career: '동행 320건',
     availableTime: '이번 주 화·목 가능',
+    reviewCount: 64,
+    rehireRate: 88,
   ),
 ];

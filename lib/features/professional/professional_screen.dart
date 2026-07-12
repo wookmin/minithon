@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
+import '../../core/ui/avatars.dart';
 import '../../core/ui/screen_header.dart';
 import '../../core/ui/soft_card.dart';
 import '../care/care_models.dart';
@@ -102,26 +103,25 @@ class _ExpertCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: c.professionalSoft,
-                child: Text(
-                  expert.name.characters.first,
-                  style: TextStyle(
-                    color: accent,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 19,
-                  ),
-                ),
-              ),
+              GradientAvatar(label: expert.name, color: accent),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      expert.name,
-                      style: Theme.of(context).textTheme.titleLarge,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            expert.name,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                        if (expert.isCertified) ...[
+                          const SizedBox(width: 6),
+                          _CertifiedBadge(accent: accent),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -131,29 +131,37 @@ class _ExpertCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: c.professionalSoft,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.star_rounded, size: 15, color: accent),
-                    const SizedBox(width: 3),
-                    Text(
-                      expert.rating.toStringAsFixed(1),
-                      style: TextStyle(
-                        color: accent,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12.5,
-                      ),
+                    const SizedBox(height: 7),
+                    Row(
+                      children: [
+                        Icon(Icons.star_rounded, size: 16, color: accent),
+                        const SizedBox(width: 3),
+                        Text(
+                          expert.rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                        Text(
+                          ' (${expert.reviewCount})',
+                          style: TextStyle(
+                            color: c.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                        if (expert.rehireRate > 0) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '재이용 ${expert.rehireRate}%',
+                            style: TextStyle(
+                              color: c.textSecondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -180,8 +188,6 @@ class _ExpertCard extends StatelessWidget {
               Expanded(
                 child: FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(52),
                   ),
                   onPressed: () => _showMessage(context, '방문 예약 요청을 준비하고 있어요.'),
@@ -199,6 +205,38 @@ class _ExpertCard extends StatelessWidget {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _CertifiedBadge extends StatelessWidget {
+  const _CertifiedBadge({required this.accent});
+
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.verified_rounded, size: 13, color: accent),
+          const SizedBox(width: 3),
+          Text(
+            '인증',
+            style: TextStyle(
+              color: accent,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
+import '../../core/ui/avatars.dart';
 import '../../core/ui/screen_header.dart';
 import '../../core/ui/soft_card.dart';
 import '../care/care_models.dart';
@@ -28,10 +29,6 @@ class GeneralScreen extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: accent,
-              foregroundColor: Colors.white,
-            ),
             onPressed: () => _showDemoMessage(context, '요청 내용을 확인하고 있어요.'),
             icon: const Icon(Icons.add_rounded),
             label: const Text('요청 올리기'),
@@ -183,11 +180,17 @@ class _ErrandCard extends StatelessWidget {
                 style: TextStyle(color: c.textSecondary, fontSize: 13),
               ),
               const Spacer(),
-              Icon(Icons.people_alt_rounded, size: 15, color: c.textSecondary),
-              const SizedBox(width: 4),
+              if (errand.helperCount > 0) ...[
+                AvatarStack(count: errand.helperCount, diameter: 24),
+                const SizedBox(width: 6),
+              ],
               Text(
                 '지원 ${errand.helperCount}명',
-                style: TextStyle(color: c.textSecondary, fontSize: 13),
+                style: TextStyle(
+                  color: c.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
