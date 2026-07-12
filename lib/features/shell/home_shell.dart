@@ -16,10 +16,10 @@ class HomeShell extends StatelessWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.spa_rounded, size: 20, color: scheme.primary),
+            Icon(Icons.pets_rounded, size: 20, color: scheme.primary),
             const SizedBox(width: 7),
             const Text(
-              '가까이',
+              '똥강아지',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
             ),
           ],

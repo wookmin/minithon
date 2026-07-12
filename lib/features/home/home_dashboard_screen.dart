@@ -83,7 +83,7 @@ class _CareHero extends StatelessWidget {
                   color: scheme.primaryContainer,
                   borderRadius: BorderRadius.circular(AppRadius.surface),
                 ),
-                child: Icon(Icons.spa_rounded, color: scheme.primary),
+                child: Icon(Icons.pets_rounded, color: scheme.primary),
               ),
               const Spacer(),
               if (needsReview > 0)
