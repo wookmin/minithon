@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +10,7 @@ import '../../core/ui/soft_card.dart';
 import '../classification/classification_providers.dart';
 import '../classification/need_category.dart';
 import '../classification/need_classification_result.dart';
+import '../recording/audio_transcription_providers.dart';
 import '../stt/stt_providers.dart';
 
 /// 통화 텍스트 분석 화면. (실제 통화 분석 결과 주입 대체)
@@ -26,11 +28,83 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
   NeedClassificationResult? _lastResult;
   bool _isAnalyzing = false;
   bool _isListening = false;
+  bool _isTranscribing = false;
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _pickAndTranscribe() async {
+    if (_isAnalyzing || _isTranscribing) return;
+
+    final selection = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const [
+        'm4a',
+        'mp3',
+        'wav',
+        'aac',
+        'aiff',
+        'flac',
+        'ogg',
+        'caf',
+      ],
+      withData: true,
+    );
+    if (selection == null) return;
+
+    final file = selection.files.single;
+    final bytes = file.bytes;
+    if (bytes == null) {
+      _showMessage('파일을 읽지 못했어요');
+      return;
+    }
+
+    setState(() => _isTranscribing = true);
+    final service = ref.read(audioTranscriptionServiceProvider);
+    final result = await service.transcribe(
+      bytes: bytes,
+      mimeType: _mimeForExtension(file.extension),
+    );
+    if (!mounted) return;
+    setState(() => _isTranscribing = false);
+
+    if (!result.isSuccess) {
+      _showMessage(result.error ?? '전사에 실패했어요');
+      return;
+    }
+
+    _controller.text = result.text!;
+    await _analyze();
+  }
+
+  String _mimeForExtension(String? extension) {
+    switch (extension?.toLowerCase()) {
+      case 'mp3':
+        return 'audio/mp3';
+      case 'wav':
+        return 'audio/wav';
+      case 'aac':
+        return 'audio/aac';
+      case 'aiff':
+        return 'audio/aiff';
+      case 'flac':
+        return 'audio/flac';
+      case 'ogg':
+        return 'audio/ogg';
+      case 'm4a':
+      case 'caf':
+      default:
+        return 'audio/mp4';
+    }
   }
 
   Future<void> _analyze() async {
@@ -129,7 +203,7 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '텍스트를 입력하거나 마이크로 말하면, 도움이 필요한 말만 골라 알려드려요.',
+            '텍스트·음성·녹음 파일 중 편한 방법으로 넣으면, 도움이 필요한 말만 골라 알려드려요.',
             style: text.bodyMedium?.copyWith(height: 1.45),
           ),
           const SizedBox(height: 18),
@@ -155,7 +229,9 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _isAnalyzing ? null : _toggleListening,
+                        onPressed: (_isAnalyzing || _isTranscribing)
+                            ? null
+                            : _toggleListening,
                         icon: Icon(
                           _isListening
                               ? Icons.stop_rounded
@@ -171,7 +247,9 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
                         style: FilledButton.styleFrom(
                           minimumSize: const Size.fromHeight(52),
                         ),
-                        onPressed: _isAnalyzing ? null : _analyze,
+                        onPressed: (_isAnalyzing || _isTranscribing)
+                            ? null
+                            : _analyze,
                         icon: _isAnalyzing
                             ? const SizedBox.square(
                                 dimension: 18,
@@ -184,6 +262,19 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: (_isAnalyzing || _isTranscribing)
+                      ? null
+                      : _pickAndTranscribe,
+                  icon: _isTranscribing
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.graphic_eq_rounded, size: 20),
+                  label: Text(_isTranscribing ? '녹음 파일 분석 중' : '녹음 파일 올리기'),
                 ),
               ],
             ),
