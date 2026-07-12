@@ -53,7 +53,7 @@ class MyPageScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '${profile.relationship} · ${profile.phoneNumber}',
+                          profile.phoneNumber,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
@@ -168,31 +168,25 @@ class _MyProfileFormSheet extends ConsumerStatefulWidget {
 class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _relationshipController;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.profile.name);
     _phoneController = TextEditingController(text: widget.profile.phoneNumber);
-    _relationshipController = TextEditingController(
-      text: widget.profile.relationship,
-    );
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _relationshipController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
-    final relationship = _relationshipController.text.trim();
-    if ([name, phone, relationship].any((value) => value.isEmpty)) {
+    if ([name, phone].any((value) => value.isEmpty)) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(content: Text('모든 정보를 입력해주세요.')));
@@ -201,9 +195,7 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
 
     await ref
         .read(myProfileProvider.notifier)
-        .save(
-          MyProfile(name: name, phoneNumber: phone, relationship: relationship),
-        );
+        .save(MyProfile(name: name, phoneNumber: phone));
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -235,7 +227,6 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
           const SizedBox(height: 16),
           _Field(controller: _nameController, label: '이름'),
           _Field(controller: _phoneController, label: '전화번호'),
-          _Field(controller: _relationshipController, label: '관계'),
           const SizedBox(height: 14),
           FilledButton(onPressed: _save, child: const Text('저장하기')),
         ],
@@ -260,7 +251,7 @@ class _RecipientCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  recipient.name,
+                  '${recipient.name} · ${recipient.relationship}',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -353,10 +344,13 @@ class _RecipientFormSheet extends ConsumerStatefulWidget {
 }
 
 class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
+  static const _relationshipOptions = ['어머니', '아버지', '배우자', '조부모', '기타'];
+
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
   late final TextEditingController _hospitalController;
+  late String _relationship;
 
   @override
   void initState() {
@@ -370,6 +364,7 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
     _hospitalController = TextEditingController(
       text: recipient?.favoriteHospital ?? '',
     );
+    _relationship = recipient?.relationship ?? _relationshipOptions.first;
   }
 
   @override
@@ -399,6 +394,7 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
           DateTime.now().microsecondsSinceEpoch.toString(),
       name: name,
       phoneNumber: phone,
+      relationship: _relationship,
       address: address,
       favoriteHospital: hospital,
     );
@@ -437,6 +433,19 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
           const SizedBox(height: 16),
           _Field(controller: _nameController, label: '이름'),
           _Field(controller: _phoneController, label: '전화번호'),
+          DropdownButtonFormField<String>(
+            initialValue: _relationship,
+            decoration: const InputDecoration(labelText: '나와의 관계'),
+            items: [
+              for (final option in _relationshipOptions)
+                DropdownMenuItem(value: option, child: Text(option)),
+            ],
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() => _relationship = value);
+            },
+          ),
+          const SizedBox(height: 10),
           _Field(controller: _addressController, label: '집 주소'),
           _Field(controller: _hospitalController, label: '자주 가는 병원'),
           const SizedBox(height: 14),

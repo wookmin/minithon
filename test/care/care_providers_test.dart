@@ -24,6 +24,7 @@ void main() {
       id: 'recipient-2',
       name: '박영수',
       phoneNumber: '010-1111-2222',
+      relationship: '아버지',
       address: '서울시 송파구 올림픽로 1',
       favoriteHospital: '서울아산병원',
     );
@@ -55,16 +56,12 @@ void main() {
     final initial = await container.read(myProfileProvider.future);
     expect(initial.name, '이인욱');
 
-    const profile = MyProfile(
-      name: '홍길동',
-      phoneNumber: '010-3333-4444',
-      relationship: '아들',
-    );
+    const profile = MyProfile(name: '홍길동', phoneNumber: '010-3333-4444');
 
     await container.read(myProfileProvider.notifier).save(profile);
 
     final saved = container.read(myProfileProvider).asData!.value;
     expect(saved.name, '홍길동');
-    expect(saved.relationship, '아들');
+    expect(saved.phoneNumber, '010-3333-4444');
   });
 }

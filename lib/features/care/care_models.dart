@@ -5,6 +5,7 @@ class CareRecipient {
     required this.id,
     required this.name,
     required this.phoneNumber,
+    required this.relationship,
     required this.address,
     required this.favoriteHospital,
   });
@@ -14,6 +15,7 @@ class CareRecipient {
       id: json['id'] as String,
       name: json['name'] as String,
       phoneNumber: json['phoneNumber'] as String,
+      relationship: json['relationship'] as String? ?? '어머니',
       address: json['address'] as String,
       favoriteHospital: json['favoriteHospital'] as String,
     );
@@ -22,6 +24,7 @@ class CareRecipient {
   final String id;
   final String name;
   final String phoneNumber;
+  final String relationship;
   final String address;
   final String favoriteHospital;
 
@@ -30,6 +33,7 @@ class CareRecipient {
       'id': id,
       'name': name,
       'phoneNumber': phoneNumber,
+      'relationship': relationship,
       'address': address,
       'favoriteHospital': favoriteHospital,
     };
@@ -37,32 +41,21 @@ class CareRecipient {
 }
 
 class MyProfile {
-  const MyProfile({
-    required this.name,
-    required this.phoneNumber,
-    required this.relationship,
-  });
+  const MyProfile({required this.name, required this.phoneNumber});
 
   factory MyProfile.fromJson(Map<String, dynamic> json) {
     return MyProfile(
       name: json['name'] as String? ?? defaultMyProfile.name,
       phoneNumber:
           json['phoneNumber'] as String? ?? defaultMyProfile.phoneNumber,
-      relationship:
-          json['relationship'] as String? ?? defaultMyProfile.relationship,
     );
   }
 
   final String name;
   final String phoneNumber;
-  final String relationship;
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'phoneNumber': phoneNumber,
-      'relationship': relationship,
-    };
+    return {'name': name, 'phoneNumber': phoneNumber};
   }
 }
 
@@ -166,16 +159,13 @@ const defaultCareRecipients = [
     id: 'recipient-1',
     name: '김순자',
     phoneNumber: '010-3245-7788',
+    relationship: '어머니',
     address: '전북특별자치도 남원시 향단로 10',
     favoriteHospital: '남원의료원',
   ),
 ];
 
-const defaultMyProfile = MyProfile(
-  name: '이인욱',
-  phoneNumber: '010-9876-1234',
-  relationship: '자녀',
-);
+const defaultMyProfile = MyProfile(name: '이인욱', phoneNumber: '010-9876-1234');
 
 const demoSchedules = [
   CareSchedule(
