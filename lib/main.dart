@@ -36,10 +36,10 @@ Future<void> main() async {
   if (Platform.isAndroid) {
     final recordingRepository = RecordingRepository();
     recordingRepository.setAnalyzeListener(
-      () => router.go('/dev-input?auto=1'),
+      () => router.go('/call-analysis?auto=1'),
     );
     if (await recordingRepository.consumePendingAnalyze()) {
-      router.go('/dev-input?auto=1');
+      router.go('/call-analysis?auto=1');
     }
   }
 

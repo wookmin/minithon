@@ -71,9 +71,9 @@ GoRouter createRouter({String initialLocation = '/login'}) {
         builder: (context, state) => const RecordingSetupScreen(),
       ),
       GoRoute(
-        path: '/dev-input',
+        path: '/call-analysis',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => DevInputScreen(
+        builder: (context, state) => CallAnalysisScreen(
           autoAnalyzeLatest: state.uri.queryParameters['auto'] == '1',
         ),
       ),

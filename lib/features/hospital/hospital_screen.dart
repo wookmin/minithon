@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
@@ -9,11 +10,32 @@ import '../profile/profile_providers.dart';
 import 'hospital.dart';
 import 'hospital_repository.dart';
 
-class HospitalScreen extends ConsumerWidget {
+Future<void> _call(String phone) async {
+  final uri = Uri(scheme: 'tel', path: phone.replaceAll('-', ''));
+  await launchUrl(uri);
+}
+
+Future<void> _openMap(Hospital hospital) async {
+  final query = Uri.encodeComponent('${hospital.name} ${hospital.address}');
+  await launchUrl(
+    Uri.parse('https://maps.google.com/?q=$query'),
+    mode: LaunchMode.externalApplication,
+  );
+}
+
+class HospitalScreen extends ConsumerStatefulWidget {
   const HospitalScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HospitalScreen> createState() => _HospitalScreenState();
+}
+
+class _HospitalScreenState extends ConsumerState<HospitalScreen> {
+  static const _filters = ['전체', '정형외과', '내과', '통증', '재활'];
+  String _filter = '전체';
+
+  @override
+  Widget build(BuildContext context) {
     final profile = ref.watch(parentProfileProvider);
     final repository = ref.watch(hospitalRepositoryProvider);
     final accent = context.colors.health;
@@ -21,7 +43,10 @@ class HospitalScreen extends ConsumerWidget {
     return FutureBuilder<List<Hospital>>(
       future: repository.findNearby(profile.address),
       builder: (context, snapshot) {
-        final hospitals = snapshot.data ?? const [];
+        final all = snapshot.data ?? const <Hospital>[];
+        final hospitals = _filter == '전체'
+            ? all
+            : all.where((h) => h.department.contains(_filter)).toList();
         return ListView(
           padding: const EdgeInsets.only(bottom: 28),
           children: [
@@ -37,7 +62,7 @@ class HospitalScreen extends ConsumerWidget {
                 name: profile.name,
                 age: profile.age,
                 address: profile.address,
-                count: hospitals.length,
+                count: all.length,
               ),
             ),
             const SizedBox(height: 20),
@@ -47,11 +72,13 @@ class HospitalScreen extends ConsumerWidget {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
-                  _FilterChip(label: '전체', selected: true, accent: accent),
-                  _FilterChip(label: '정형외과', accent: accent),
-                  _FilterChip(label: '내과', accent: accent),
-                  _FilterChip(label: '통증', accent: accent),
-                  _FilterChip(label: '재활', accent: accent),
+                  for (final f in _filters)
+                    _FilterChip(
+                      label: f,
+                      accent: accent,
+                      selected: f == _filter,
+                      onTap: () => setState(() => _filter = f),
+                    ),
                 ],
               ),
             ),
@@ -68,6 +95,15 @@ class HospitalScreen extends ConsumerWidget {
               const Padding(
                 padding: EdgeInsets.only(top: 40),
                 child: Center(child: CircularProgressIndicator()),
+              )
+            else if (hospitals.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+                child: Text(
+                  "'$_filter' 진료과 병원이 아직 없어요",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: context.colors.textSecondary),
+                ),
               )
             else
               for (final h in hospitals)
@@ -86,32 +122,37 @@ class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.label,
     required this.accent,
+    required this.onTap,
     this.selected = false,
   });
 
   final String label;
   final Color accent;
+  final VoidCallback onTap;
   final bool selected;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? accent : Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: selected ? accent : context.colors.hairline,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? accent : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: selected ? accent : context.colors.hairline,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : context.colors.textSecondary,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : context.colors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -226,7 +267,6 @@ class _HospitalCard extends StatelessWidget {
     final c = context.colors;
     final text = Theme.of(context).textTheme;
     return SoftCard(
-      onTap: () {},
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -294,7 +334,7 @@ class _HospitalCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _openMap(hospital),
                   icon: const Icon(Icons.place_outlined, size: 18),
                   label: const Text('길찾기'),
                 ),
@@ -305,15 +345,7 @@ class _HospitalCard extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                   ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        SnackBar(
-                          content: Text('${hospital.name} · ${hospital.phone}'),
-                        ),
-                      );
-                  },
+                  onPressed: () => _call(hospital.phone),
                   icon: const Icon(Icons.call_rounded, size: 18),
                   label: const Text('전화'),
                 ),

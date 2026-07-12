@@ -37,7 +37,7 @@ void main() {
             const KeywordNeedClassifier(),
           ),
         ],
-        child: const MaterialApp(home: DevInputScreen()),
+        child: const MaterialApp(home: CallAnalysisScreen()),
       ),
     );
     return fake;

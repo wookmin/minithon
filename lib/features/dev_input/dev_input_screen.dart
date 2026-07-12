@@ -18,20 +18,20 @@ import '../recording/audio_transcription_providers.dart';
 import '../recording/recording_repository.dart';
 import '../stt/stt_providers.dart';
 
-/// 통화 텍스트 분석 화면. (실제 통화 분석 결과 주입 대체)
+/// 통화 분석 화면. 텍스트·음성·녹음 파일을 니즈 분류에 태운다.
 ///
 /// 텍스트 입력 → 분류 → 니즈가 있으면 알림 표시. 알림 탭 시 해당 탭으로 이동.
-class DevInputScreen extends ConsumerStatefulWidget {
-  const DevInputScreen({super.key, this.autoAnalyzeLatest = false});
+class CallAnalysisScreen extends ConsumerStatefulWidget {
+  const CallAnalysisScreen({super.key, this.autoAnalyzeLatest = false});
 
   /// 통화 종료 알림을 탭해 진입한 경우 true — 최근 녹음을 자동 분석한다.
   final bool autoAnalyzeLatest;
 
   @override
-  ConsumerState<DevInputScreen> createState() => _DevInputScreenState();
+  ConsumerState<CallAnalysisScreen> createState() => _CallAnalysisScreenState();
 }
 
-class _DevInputScreenState extends ConsumerState<DevInputScreen> {
+class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
   final _controller = TextEditingController();
   NeedClassificationResult? _lastResult;
   bool _isAnalyzing = false;
@@ -241,7 +241,7 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('통화 텍스트 분석')),
+      appBar: AppBar(title: const Text('통화 분석')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
@@ -359,7 +359,7 @@ class _DevInputScreenState extends ConsumerState<DevInputScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            '예시 문장',
+            '이렇게 말해보세요',
             style: text.bodyMedium?.copyWith(
               fontSize: 13,
               fontWeight: FontWeight.w600,

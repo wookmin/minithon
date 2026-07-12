@@ -3,19 +3,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
+import '../../core/ui/action_sheet.dart';
 import '../../core/ui/avatars.dart';
 import '../../core/ui/screen_header.dart';
 import '../../core/ui/soft_card.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
 
-class GeneralScreen extends ConsumerWidget {
+class GeneralScreen extends ConsumerStatefulWidget {
   const GeneralScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final errands = ref.watch(errandRequestsProvider);
+  ConsumerState<GeneralScreen> createState() => _GeneralScreenState();
+}
+
+class _GeneralScreenState extends ConsumerState<GeneralScreen> {
+  static const _filters = ['전체', '장보기', '수리', '병원 동행', '교통'];
+  String _filter = '전체';
+
+  @override
+  Widget build(BuildContext context) {
+    final all = ref.watch(errandRequestsProvider);
     final accent = context.colors.general;
+    final errands = _filter == '전체'
+        ? all
+        : all.where((e) => e.category == _filter).toList();
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 28),
@@ -29,7 +41,12 @@ class GeneralScreen extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: FilledButton.icon(
-            onPressed: () => _showDemoMessage(context, '요청 내용을 확인하고 있어요.'),
+            onPressed: () => showConfirmSheet(
+              context,
+              icon: Icons.campaign_rounded,
+              title: '요청을 등록했어요',
+              message: '가까운 이웃에게 도움 요청이 전달됐어요.\n지원자가 생기면 알려드릴게요.',
+            ),
             icon: const Icon(Icons.add_rounded),
             label: const Text('요청 올리기'),
           ),
@@ -40,36 +57,46 @@ class GeneralScreen extends ConsumerWidget {
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            children: const [
-              _FilterChip(label: '전체', selected: true),
-              _FilterChip(label: '장보기'),
-              _FilterChip(label: '수리'),
-              _FilterChip(label: '병원 동행'),
-              _FilterChip(label: '교통'),
+            children: [
+              for (final f in _filters)
+                _FilterChip(
+                  label: f,
+                  selected: f == _filter,
+                  onTap: () => setState(() => _filter = f),
+                ),
             ],
           ),
         ),
         const SizedBox(height: 8),
-        for (final errand in errands)
+        if (errands.isEmpty)
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-            child: _ErrandCard(errand: errand, accent: accent),
-          ),
+            padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+            child: Text(
+              "'$_filter' 요청이 아직 없어요",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: context.colors.textSecondary),
+            ),
+          )
+        else
+          for (final errand in errands)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+              child: _ErrandCard(errand: errand, accent: accent),
+            ),
       ],
     );
-  }
-
-  static void _showDemoMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, this.selected = false});
+  const _FilterChip({
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+  });
 
   final String label;
+  final VoidCallback onTap;
   final bool selected;
 
   @override
@@ -77,21 +104,24 @@ class _FilterChip extends StatelessWidget {
     final accent = context.colors.general;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? accent : Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: selected ? accent : context.colors.hairline,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? accent : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: selected ? accent : context.colors.hairline,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : context.colors.textSecondary,
-            fontWeight: FontWeight.w700,
-            fontSize: 13.5,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : context.colors.textSecondary,
+              fontWeight: FontWeight.w700,
+              fontSize: 13.5,
+            ),
           ),
         ),
       ),
@@ -124,7 +154,6 @@ class _ErrandCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return SoftCard(
-      onTap: () {},
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -196,9 +225,11 @@ class _ErrandCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           OutlinedButton(
-            onPressed: () => GeneralScreen._showDemoMessage(
+            onPressed: () => showConfirmSheet(
               context,
-              '${errand.title} 요청을 확인했어요.',
+              icon: Icons.volunteer_activism_rounded,
+              title: '지원했어요',
+              message: '요청자에게 지원 의사를 전달했어요.\n연결되면 알림으로 알려드릴게요.',
             ),
             child: const Text('지원하기'),
           ),

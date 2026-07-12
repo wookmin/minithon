@@ -24,7 +24,7 @@ void main() {
     await tester.tap(find.text('시작하기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('가까이'), findsOneWidget);
+    expect(find.text('똥강아지'), findsOneWidget);
     expect(find.textContaining('케어 현황'), findsOneWidget);
 
     final hospitalTab = find.descendant(

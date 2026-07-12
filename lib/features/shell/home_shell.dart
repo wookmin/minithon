@@ -27,7 +27,7 @@ class HomeShell extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 14),
-            child: _AnalyzeButton(onTap: () => context.push('/dev-input')),
+            child: _AnalyzeButton(onTap: () => context.push('/call-analysis')),
           ),
         ],
       ),

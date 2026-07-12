@@ -3,19 +3,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
+import '../../core/ui/action_sheet.dart';
 import '../../core/ui/avatars.dart';
 import '../../core/ui/screen_header.dart';
 import '../../core/ui/soft_card.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
 
-class ProfessionalScreen extends ConsumerWidget {
+class ProfessionalScreen extends ConsumerStatefulWidget {
   const ProfessionalScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final experts = ref.watch(careExpertsProvider);
+  ConsumerState<ProfessionalScreen> createState() => _ProfessionalScreenState();
+}
+
+class _ProfessionalScreenState extends ConsumerState<ProfessionalScreen> {
+  static const _roles = ['전체', '사회복지사', '요양보호사', '병원동행'];
+  String _role = '전체';
+
+  @override
+  Widget build(BuildContext context) {
+    final all = ref.watch(careExpertsProvider);
     final accent = context.colors.professional;
+    final experts = _role == '전체'
+        ? all
+        : all
+              .where(
+                (e) => e.role.replaceAll(' ', '').contains(_role),
+              )
+              .toList();
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 28),
@@ -32,19 +48,32 @@ class ProfessionalScreen extends ConsumerWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             children: [
-              _RoleChip(label: '전체', selected: true, accent: accent),
-              _RoleChip(label: '사회복지사', accent: accent),
-              _RoleChip(label: '요양보호사', accent: accent),
-              _RoleChip(label: '병원동행', accent: accent),
+              for (final r in _roles)
+                _RoleChip(
+                  label: r,
+                  accent: accent,
+                  selected: r == _role,
+                  onTap: () => setState(() => _role = r),
+                ),
             ],
           ),
         ),
         const SizedBox(height: 10),
-        for (final expert in experts)
+        if (experts.isEmpty)
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            child: _ExpertCard(expert: expert, accent: accent),
-          ),
+            padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+            child: Text(
+              "'$_role' 전문가가 아직 없어요",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: context.colors.textSecondary),
+            ),
+          )
+        else
+          for (final expert in experts)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: _ExpertCard(expert: expert, accent: accent),
+            ),
       ],
     );
   }
@@ -54,32 +83,37 @@ class _RoleChip extends StatelessWidget {
   const _RoleChip({
     required this.label,
     required this.accent,
+    required this.onTap,
     this.selected = false,
   });
 
   final String label;
   final Color accent;
+  final VoidCallback onTap;
   final bool selected;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? accent : Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: selected ? accent : context.colors.hairline,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? accent : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: selected ? accent : context.colors.hairline,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : context.colors.textSecondary,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : context.colors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -180,7 +214,12 @@ class _ExpertCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => _showMessage(context, '상담 가능 시간을 확인하고 있어요.'),
+                  onPressed: () => showConfirmSheet(
+                    context,
+                    icon: Icons.chat_bubble_rounded,
+                    title: '상담을 요청했어요',
+                    message: '${expert.name} 님에게 상담 요청을 보냈어요.\n가능한 시간에 연락드릴게요.',
+                  ),
                   child: const Text('상담 요청'),
                 ),
               ),
@@ -190,7 +229,12 @@ class _ExpertCard extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                   ),
-                  onPressed: () => _showMessage(context, '방문 예약 요청을 준비하고 있어요.'),
+                  onPressed: () => showConfirmSheet(
+                    context,
+                    icon: Icons.event_available_rounded,
+                    title: '방문 예약을 신청했어요',
+                    message: '${expert.name} 님과 방문 일정을 조율할게요.\n확정되면 알림으로 알려드릴게요.',
+                  ),
                   child: const Text('방문 예약'),
                 ),
               ),
@@ -199,12 +243,6 @@ class _ExpertCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
