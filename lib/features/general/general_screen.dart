@@ -1,0 +1,233 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/theme/app_colors_x.dart';
+import '../../core/theme/app_shape.dart';
+import '../../core/ui/screen_header.dart';
+import '../../core/ui/soft_card.dart';
+import '../care/care_models.dart';
+import '../care/care_providers.dart';
+
+class GeneralScreen extends ConsumerWidget {
+  const GeneralScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final errands = ref.watch(errandRequestsProvider);
+    final accent = context.colors.general;
+
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 28),
+      children: [
+        ScreenHeader(
+          eyebrow: '생활',
+          title: '지역 심부름',
+          subtitle: '가까운 생활 도움과 이동 요청을 확인하세요.',
+          accent: accent,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: accent,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => _showDemoMessage(context, '요청 내용을 확인하고 있어요.'),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('요청 올리기'),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            children: const [
+              _FilterChip(label: '전체', selected: true),
+              _FilterChip(label: '장보기'),
+              _FilterChip(label: '수리'),
+              _FilterChip(label: '병원 동행'),
+              _FilterChip(label: '교통'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (final errand in errands)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+            child: _ErrandCard(errand: errand, accent: accent),
+          ),
+      ],
+    );
+  }
+
+  static void _showDemoMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({required this.label, this.selected = false});
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = context.colors.general;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? accent : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(
+            color: selected ? accent : context.colors.hairline,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : context.colors.textSecondary,
+            fontWeight: FontWeight.w700,
+            fontSize: 13.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrandCard extends StatelessWidget {
+  const _ErrandCard({required this.errand, required this.accent});
+
+  final ErrandRequest errand;
+  final Color accent;
+
+  IconData get _icon {
+    switch (errand.category) {
+      case '장보기':
+        return Icons.shopping_basket_rounded;
+      case '수리':
+        return Icons.build_rounded;
+      case '병원 동행':
+        return Icons.directions_walk_rounded;
+      case '교통':
+        return Icons.directions_car_rounded;
+      default:
+        return Icons.volunteer_activism_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return SoftCard(
+      onTap: () {},
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IconTile(icon: _icon, color: accent, background: c.generalSoft),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        _Badge(
+                          label: errand.category,
+                          color: accent,
+                          soft: c.generalSoft,
+                        ),
+                        const Spacer(),
+                        Text(
+                          errand.status,
+                          style: TextStyle(
+                            color: accent,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      errand.title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            errand.description,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.place_outlined, size: 16, color: c.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                '${errand.region} · ${errand.distance}',
+                style: TextStyle(color: c.textSecondary, fontSize: 13),
+              ),
+              const Spacer(),
+              Icon(Icons.people_alt_rounded, size: 15, color: c.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                '지원 ${errand.helperCount}명',
+                style: TextStyle(color: c.textSecondary, fontSize: 13),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton(
+            onPressed: () => GeneralScreen._showDemoMessage(
+              context,
+              '${errand.title} 요청을 확인했어요.',
+            ),
+            child: const Text('지원하기'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, required this.color, required this.soft});
+
+  final String label;
+  final Color color;
+  final Color soft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: soft,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
