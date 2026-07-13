@@ -30,6 +30,10 @@ class MainActivity : FlutterActivity() {
                     result.success(pendingAnalyze)
                     pendingAnalyze = false
                 }
+                "testCallNotification" -> {
+                    CallNotifier.notifyCallEnded(this)
+                    result.success(true)
+                }
                 else -> result.notImplemented()
             }
         }

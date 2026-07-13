@@ -71,6 +71,21 @@ class _RecordingDiagnosticScreenState
     });
   }
 
+  Future<void> _testNotification() async {
+    try {
+      await ref.read(recordingRepositoryProvider).testNotification();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('테스트 알림 요청됨 — 상태바를 확인하세요')),
+      );
+    } on Object catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('테스트 알림 실패: $e')));
+    }
+  }
+
   Future<void> _requestPermissions() async {
     await [
       Permission.audio,
@@ -114,9 +129,25 @@ class _RecordingDiagnosticScreenState
                 for (final entry in _permissions.entries)
                   Text('${entry.key}: ${entry.value}'),
                 const SizedBox(height: 8),
-                FilledButton.tonal(
-                  onPressed: _requestPermissions,
-                  child: const Text('권한 요청'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.tonal(
+                      onPressed: _requestPermissions,
+                      child: const Text('권한 요청'),
+                    ),
+                    OutlinedButton(
+                      onPressed: _testNotification,
+                      child: const Text('테스트 알림 띄우기'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  '테스트 알림이 뜨면 → 알림 표시는 정상, 원인은 CallReceiver 미수신.\n'
+                  '안 뜨면 → 알림 권한/채널 문제.',
+                  style: TextStyle(fontSize: 12),
                 ),
               ],
             ),

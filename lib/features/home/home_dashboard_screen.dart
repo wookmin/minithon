@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/firebase/firebase_providers.dart';
 import '../../core/notifications/notification_payload.dart';
@@ -59,12 +60,6 @@ class HomeDashboardScreen extends ConsumerWidget {
           error: (_, _) =>
               _AddParentCard(onTap: () => context.push('/onboarding')),
         ),
-        const SizedBox(height: 22),
-        _QuickActions(
-          onHospital: () => context.go('/hospital'),
-          onErrand: () => context.go('/general'),
-          onExpert: () => context.go('/professional'),
-        ),
         const SizedBox(height: 26),
         const _SectionTitle(
           title: '오늘 확인할 일정',
@@ -72,6 +67,8 @@ class HomeDashboardScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         _TimelineCard(schedules: schedules),
+        const SizedBox(height: 20),
+        const _WelfareBanner(),
         const SizedBox(height: 26),
         const _SectionTitle(title: '최근 통화 분석', subtitle: '확인이 필요한 내용만 추렸어요'),
         const SizedBox(height: 12),
@@ -314,88 +311,76 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-class _QuickActions extends StatelessWidget {
-  const _QuickActions({
-    required this.onHospital,
-    required this.onErrand,
-    required this.onExpert,
-  });
+class _WelfareBanner extends StatelessWidget {
+  const _WelfareBanner();
 
-  final VoidCallback onHospital;
-  final VoidCallback onErrand;
-  final VoidCallback onExpert;
+  static final Uri _welfareUri = Uri.parse('https://www.bokjiro.go.kr');
 
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Row(
-      children: [
-        _ActionButton(
-          icon: Icons.favorite_rounded,
-          label: '건강',
-          color: c.health,
-          soft: c.healthSoft,
-          onTap: onHospital,
-        ),
-        const SizedBox(width: 10),
-        _ActionButton(
-          icon: Icons.handyman_rounded,
-          label: '심부름',
-          color: c.general,
-          soft: c.generalSoft,
-          onTap: onErrand,
-        ),
-        const SizedBox(width: 10),
-        _ActionButton(
-          icon: Icons.diversity_1_rounded,
-          label: '전문가',
-          color: c.professional,
-          soft: c.professionalSoft,
-          onTap: onExpert,
-        ),
-      ],
+  Future<void> _open(BuildContext context) async {
+    final opened = await launchUrl(
+      _welfareUri,
+      mode: LaunchMode.externalApplication,
     );
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('복지로 사이트를 열지 못했어요.')));
+    }
   }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.soft,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final Color soft;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: SoftCard(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        onTap: onTap,
-        child: Column(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: soft,
-                borderRadius: BorderRadius.circular(AppRadius.surface),
+    final scheme = Theme.of(context).colorScheme;
+    final c = context.colors;
+    return Material(
+      color: const Color(0xFFEAF4FF),
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _open(context),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.surface),
+                ),
+                child: Icon(
+                  Icons.volunteer_activism_rounded,
+                  color: scheme.primary,
+                  size: 25,
+                ),
               ),
-              child: Icon(icon, color: color),
-            ),
-            const SizedBox(height: 11),
-            Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-            ),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '복지 한눈에 모아보기',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '부모님께 맞는 지원 제도를 공식 사이트에서 확인해보세요.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: c.textSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.open_in_new_rounded, color: scheme.primary, size: 21),
+            ],
+          ),
         ),
       ),
     );

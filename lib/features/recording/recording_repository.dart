@@ -50,6 +50,12 @@ class RecordingRepository {
     return _channel.invokeMethod<Uint8List>('readRecording', {'uri': uri});
   }
 
+  /// 진단용: 통화 종료 알림 경로를 강제로 한 번 실행한다.
+  /// 이 알림이 뜨면 알림 표시(권한/채널)는 정상 → 원인은 CallReceiver 미수신.
+  Future<void> testNotification() async {
+    await _channel.invokeMethod<bool>('testCallNotification');
+  }
+
   /// 통화 종료 알림을 탭해 앱이 실행됐는지 확인하고 플래그를 소비한다.
   Future<bool> consumePendingAnalyze() async {
     final result = await _channel.invokeMethod<bool>('consumePendingAnalyze');
