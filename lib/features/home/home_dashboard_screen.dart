@@ -491,6 +491,28 @@ class _TimelineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (schedules.isEmpty) {
+      return SoftCard(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Row(
+          children: [
+            Icon(
+              Icons.event_available_rounded,
+              color: context.colors.textSecondary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '예정된 일정이 없어요.\n통화 분석이나 요청이 생기면 여기에 표시돼요.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(height: 1.4),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return SoftCard(
       child: Column(
         children: [

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors_x.dart';
 import '../theme/app_shape.dart';
 
-/// 액션 완료를 알리는 확인 바텀시트. (데모용 스낵바 대체 — 완료 상태를 명확히 보여준다)
+/// 액션 완료를 알리는 확인 바텀시트.
 Future<void> showConfirmSheet(
   BuildContext context, {
   required String title,

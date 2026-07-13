@@ -5,7 +5,16 @@ import 'package:senior_needs/features/recording/recording_matcher.dart';
 
 void main() {
   const matcher = RecordingMatcher();
-  const recipients = defaultCareRecipients;
+  const recipients = [
+    CareRecipient(
+      id: 'recipient-1',
+      name: '김순자',
+      phoneNumber: '010-3245-7788',
+      relationship: '어머니',
+      address: '서울시 강남구 테헤란로 1',
+      favoriteHospital: '가까운 병원',
+    ),
+  ];
 
   test('파일명 속 전화번호로 등록된 돌봄자를 매칭한다', () {
     final candidate = matcher.match(

@@ -23,11 +23,8 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final all = ref.watch(errandRequestsProvider);
+    final requests = ref.watch(errandRequestsProvider);
     final accent = context.colors.general;
-    final errands = _filter == '전체'
-        ? all
-        : all.where((e) => e.category == _filter).toList();
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 28),
@@ -68,22 +65,72 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        if (errands.isEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
-            child: Text(
-              "'$_filter' 요청이 아직 없어요",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: context.colors.textSecondary),
-            ),
-          )
-        else
-          for (final errand in errands)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-              child: _ErrandCard(errand: errand, accent: accent),
-            ),
+        requests.when(
+          data: (all) {
+            final errands = _filter == '전체'
+                ? all
+                : all.where((e) => e.category == _filter).toList();
+            if (errands.isEmpty) {
+              return _EmptyState(
+                title: _filter == '전체'
+                    ? '등록된 요청이 없어요'
+                    : "'$_filter' 요청이 아직 없어요",
+                message: '요청이 올라오면 이곳에서 확인하고 지원할 수 있어요.',
+              );
+            }
+            return Column(
+              children: [
+                for (final errand in errands)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                    child: _ErrandCard(errand: errand, accent: accent),
+                  ),
+              ],
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.only(top: 40),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (_, _) => const _EmptyState(
+            title: '요청을 불러오지 못했어요',
+            message: '잠시 후 다시 시도해주세요.',
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+      child: SoftCard(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Column(
+          children: [
+            Icon(Icons.inbox_rounded, color: c.textSecondary, size: 34),
+            const SizedBox(height: 10),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: c.textSecondary),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

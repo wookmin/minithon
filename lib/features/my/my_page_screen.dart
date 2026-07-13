@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
+import '../../core/ui/address_field.dart';
+import '../../core/ui/phone_number_field.dart';
 import '../../core/ui/screen_header.dart';
 import '../../core/ui/soft_card.dart';
 import '../auth/auth_providers.dart';
@@ -54,7 +56,9 @@ class MyPageScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          profile.phoneNumber,
+                          profile.phoneNumber.isEmpty
+                              ? '전화번호 미등록'
+                              : profile.phoneNumber,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
@@ -78,8 +82,10 @@ class MyPageScreen extends ConsumerWidget {
                 children: [
                   const Expanded(child: Text('내 정보를 불러오지 못했습니다.')),
                   TextButton(
-                    onPressed: () =>
-                        _showMyProfileSheet(context, defaultMyProfile),
+                    onPressed: () => _showMyProfileSheet(
+                      context,
+                      const MyProfile(name: '', phoneNumber: ''),
+                    ),
                     child: const Text('관리'),
                   ),
                 ],
@@ -108,18 +114,26 @@ class MyPageScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 4),
         recipients.when(
-          data: (items) => Column(
-            children: [
-              for (final recipient in items)
-                Padding(
+          data: (items) => items.isEmpty
+              ? Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                  child: _RecipientCard(
-                    recipient: recipient,
-                    onEdit: () => _showRecipientSheet(context, ref, recipient),
+                  child: _EmptyRecipientsCard(
+                    onAdd: () => _showRecipientSheet(context, ref),
                   ),
+                )
+              : Column(
+                  children: [
+                    for (final recipient in items)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                        child: _RecipientCard(
+                          recipient: recipient,
+                          onEdit: () =>
+                              _showRecipientSheet(context, ref, recipient),
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
           loading: () => const Padding(
             padding: EdgeInsets.only(top: 40),
             child: Center(child: CircularProgressIndicator()),
@@ -241,7 +255,10 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
           Text('내 정보 수정', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 16),
           _Field(controller: _nameController, label: '이름'),
-          _Field(controller: _phoneController, label: '전화번호'),
+          PhoneNumberField(
+            controller: _phoneController,
+            textInputAction: TextInputAction.done,
+          ),
           const SizedBox(height: 14),
           FilledButton(onPressed: _save, child: const Text('저장하기')),
         ],
@@ -289,6 +306,54 @@ class _RecipientCard extends StatelessWidget {
             icon: Icons.local_hospital_outlined,
             text: recipient.favoriteHospital,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyRecipientsCard extends StatelessWidget {
+  const _EmptyRecipientsCard({required this.onAdd});
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final scheme = Theme.of(context).colorScheme;
+    return SoftCard(
+      onTap: onAdd,
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: scheme.primaryContainer,
+              borderRadius: BorderRadius.circular(AppRadius.surface),
+            ),
+            child: Icon(Icons.person_add_alt_1_rounded, color: scheme.primary),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '돌봄 대상자를 추가해주세요',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '등록된 사람의 통화와 요청만 분석 대상으로 사용해요.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: c.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: c.textSecondary),
         ],
       ),
     );
@@ -447,7 +512,10 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
           ),
           const SizedBox(height: 16),
           _Field(controller: _nameController, label: '이름'),
-          _Field(controller: _phoneController, label: '전화번호'),
+          PhoneNumberField(
+            controller: _phoneController,
+            textInputAction: TextInputAction.next,
+          ),
           DropdownButtonFormField<String>(
             initialValue: _relationship,
             decoration: const InputDecoration(labelText: '나와의 관계'),
@@ -461,7 +529,10 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
             },
           ),
           const SizedBox(height: 10),
-          _Field(controller: _addressController, label: '집 주소'),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: AddressField(controller: _addressController),
+          ),
           _Field(controller: _hospitalController, label: '자주 가는 병원'),
           const SizedBox(height: 14),
           FilledButton(onPressed: _save, child: const Text('저장하기')),

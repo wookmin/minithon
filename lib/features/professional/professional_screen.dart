@@ -23,15 +23,8 @@ class _ProfessionalScreenState extends ConsumerState<ProfessionalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final all = ref.watch(careExpertsProvider);
+    final expertsState = ref.watch(careExpertsProvider);
     final accent = context.colors.professional;
-    final experts = _role == '전체'
-        ? all
-        : all
-              .where(
-                (e) => e.role.replaceAll(' ', '').contains(_role),
-              )
-              .toList();
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 28),
@@ -59,22 +52,72 @@ class _ProfessionalScreenState extends ConsumerState<ProfessionalScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        if (experts.isEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
-            child: Text(
-              "'$_role' 전문가가 아직 없어요",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: context.colors.textSecondary),
-            ),
-          )
-        else
-          for (final expert in experts)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: _ExpertCard(expert: expert, accent: accent),
-            ),
+        expertsState.when(
+          data: (all) {
+            final experts = _role == '전체'
+                ? all
+                : all
+                      .where((e) => e.role.replaceAll(' ', '').contains(_role))
+                      .toList();
+            if (experts.isEmpty) {
+              return _EmptyState(
+                title: _role == '전체' ? '등록된 전문가가 없어요' : "'$_role' 전문가가 아직 없어요",
+                message: '방문 가능한 전문가가 등록되면 이곳에 표시돼요.',
+              );
+            }
+            return Column(
+              children: [
+                for (final expert in experts)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                    child: _ExpertCard(expert: expert, accent: accent),
+                  ),
+              ],
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.only(top: 40),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (_, _) => const _EmptyState(
+            title: '전문가 목록을 불러오지 못했어요',
+            message: '잠시 후 다시 시도해주세요.',
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+      child: SoftCard(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Column(
+          children: [
+            Icon(Icons.groups_rounded, color: c.textSecondary, size: 34),
+            const SizedBox(height: 10),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: c.textSecondary),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -233,7 +276,8 @@ class _ExpertCard extends StatelessWidget {
                     context,
                     icon: Icons.event_available_rounded,
                     title: '방문 예약을 신청했어요',
-                    message: '${expert.name} 님과 방문 일정을 조율할게요.\n확정되면 알림으로 알려드릴게요.',
+                    message:
+                        '${expert.name} 님과 방문 일정을 조율할게요.\n확정되면 알림으로 알려드릴게요.',
                   ),
                   child: const Text('방문 예약'),
                 ),

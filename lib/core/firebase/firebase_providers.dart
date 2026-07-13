@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/auth_providers.dart';
+import 'firestore_paths.dart';
 
 /// Firestore 인스턴스. 테스트에서는 FakeFirebaseFirestore로 override한다.
 final firebaseFirestoreProvider = Provider<FirebaseFirestore>(
@@ -20,5 +21,8 @@ final currentUidProvider = Provider<String?>((ref) {
 DocumentReference<Map<String, dynamic>>? userDoc(Ref ref) {
   final uid = ref.watch(currentUidProvider);
   if (uid == null) return null;
-  return ref.watch(firebaseFirestoreProvider).collection('users').doc(uid);
+  return ref
+      .watch(firebaseFirestoreProvider)
+      .collection(FirestorePaths.users)
+      .doc(uid);
 }

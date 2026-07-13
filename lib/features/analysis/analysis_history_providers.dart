@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/firebase/firestore_paths.dart';
 import '../../core/firebase/firebase_providers.dart';
 import 'analysis_record.dart';
 
@@ -18,9 +19,9 @@ class AnalysisHistoryNotifier extends AsyncNotifier<List<AnalysisRecord>> {
     if (uid == null) return const [];
     final snapshot = await ref
         .watch(firebaseFirestoreProvider)
-        .collection('users')
+        .collection(FirestorePaths.users)
         .doc(uid)
-        .collection('analyses')
+        .collection(FirestorePaths.analyses)
         .orderBy('createdAt', descending: true)
         .limit(_maxRecords)
         .get();
@@ -34,9 +35,9 @@ class AnalysisHistoryNotifier extends AsyncNotifier<List<AnalysisRecord>> {
     if (uid == null) return;
     await ref
         .read(firebaseFirestoreProvider)
-        .collection('users')
+        .collection(FirestorePaths.users)
         .doc(uid)
-        .collection('analyses')
+        .collection(FirestorePaths.analyses)
         .doc(record.id)
         .set(record.toJson());
     ref.invalidateSelf();

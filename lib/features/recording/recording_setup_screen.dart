@@ -145,8 +145,7 @@ class _RecordingSetupScreenState extends ConsumerState<RecordingSetupScreen> {
   Widget build(BuildContext context) {
     final setup = ref.watch(recordingSetupProvider).asData?.value;
     final recipients =
-        ref.watch(careRecipientsProvider).asData?.value ??
-        defaultCareRecipients;
+        ref.watch(careRecipientsProvider).asData?.value ?? const [];
     final completed = setup?.isCompleted ?? false;
     final backgroundEnabled = setup?.backgroundDetectionEnabled ?? false;
     final text = Theme.of(context).textTheme;

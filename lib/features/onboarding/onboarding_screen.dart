@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
+import '../../core/ui/address_field.dart';
+import '../../core/ui/phone_number_field.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
 
@@ -139,36 +141,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: '이름',
-                hintText: '예: 김순자',
+                hintText: '예: 홍길동',
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
+            PhoneNumberField(
               controller: _phone,
-              keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: '전화번호',
-                hintText: '통화 녹음 매칭에 사용해요',
-              ),
+              hint: '통화 녹음 매칭에 사용해요',
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _address,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: '집 주소',
-                hintText: '주변 병원 검색에 사용해요',
-              ),
-            ),
+            AddressField(controller: _address, hint: '주소 검색 (주변 병원에 사용)'),
             const SizedBox(height: 12),
             TextField(
               controller: _hospital,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _save(),
-              decoration: const InputDecoration(
-                labelText: '자주 가는 병원 (선택)',
-              ),
+              decoration: const InputDecoration(labelText: '자주 가는 병원 (선택)'),
             ),
             const SizedBox(height: 26),
             FilledButton(

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/firebase/firestore_paths.dart';
 import '../../core/firebase/firebase_providers.dart';
 import '../auth/auth_providers.dart';
 import 'care_models.dart';
@@ -26,11 +27,13 @@ class CareRecipientsNotifier extends AsyncNotifier<List<CareRecipient>> {
     if (uid == null) return const [];
     final snapshot = await ref
         .watch(firebaseFirestoreProvider)
-        .collection('users')
+        .collection(FirestorePaths.users)
         .doc(uid)
-        .collection('recipients')
+        .collection(FirestorePaths.recipients)
         .get();
-    return snapshot.docs.map((doc) => CareRecipient.fromJson(doc.data())).toList();
+    return snapshot.docs
+        .map((doc) => CareRecipient.fromJson(doc.data()))
+        .toList();
   }
 
   Future<void> save(CareRecipient recipient) async {
@@ -38,9 +41,9 @@ class CareRecipientsNotifier extends AsyncNotifier<List<CareRecipient>> {
     if (uid == null) return;
     await ref
         .read(firebaseFirestoreProvider)
-        .collection('users')
+        .collection(FirestorePaths.users)
         .doc(uid)
-        .collection('recipients')
+        .collection(FirestorePaths.recipients)
         .doc(recipient.id)
         .set(recipient.toJson());
     ref.invalidateSelf();
@@ -130,12 +133,26 @@ class RecordingSetupNotifier extends AsyncNotifier<RecordingSetupState> {
   }
 }
 
-final careSchedulesProvider = Provider<List<CareSchedule>>(
-  (ref) => demoSchedules,
-);
+final careSchedulesProvider = Provider<List<CareSchedule>>((ref) => const []);
 
-final errandRequestsProvider = Provider<List<ErrandRequest>>(
-  (ref) => demoErrands,
-);
+final errandRequestsProvider = FutureProvider<List<ErrandRequest>>((ref) async {
+  final snapshot = await ref
+      .watch(firebaseFirestoreProvider)
+      .collection(FirestorePaths.errands)
+      .get();
+  return snapshot.docs
+      .map((doc) => ErrandRequest.fromJson(doc.data()))
+      .where((request) => request.title.isNotEmpty)
+      .toList();
+});
 
-final careExpertsProvider = Provider<List<CareExpert>>((ref) => demoExperts);
+final careExpertsProvider = FutureProvider<List<CareExpert>>((ref) async {
+  final snapshot = await ref
+      .watch(firebaseFirestoreProvider)
+      .collection(FirestorePaths.experts)
+      .get();
+  return snapshot.docs
+      .map((doc) => CareExpert.fromJson(doc.data()))
+      .where((expert) => expert.name.isNotEmpty)
+      .toList();
+});

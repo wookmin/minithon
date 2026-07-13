@@ -45,7 +45,7 @@ class GradientAvatar extends StatelessWidget {
   }
 }
 
-/// 지원자 수를 겹친 원형 아바타 더미로 보여준다. (당근·숨고 스타일)
+/// 지원자 수를 겹친 원형 아바타로 보여준다.
 class AvatarStack extends StatelessWidget {
   const AvatarStack({super.key, required this.count, this.diameter = 26});
 
@@ -69,7 +69,9 @@ class AvatarStack extends StatelessWidget {
       height: diameter,
       width: visible == 0
           ? 0
-          : diameter + (visible - 1) * (diameter - overlap) + (count > 3 ? 12 : 0),
+          : diameter +
+                (visible - 1) * (diameter - overlap) +
+                (count > 3 ? 12 : 0),
       child: Stack(
         clipBehavior: Clip.none,
         children: [

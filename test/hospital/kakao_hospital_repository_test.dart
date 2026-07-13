@@ -7,7 +7,7 @@ import 'package:senior_needs/features/hospital/hospital_repository.dart';
 import 'package:senior_needs/features/hospital/kakao_api_config.dart';
 
 void main() {
-  test('키가 없으면 더미 목록으로 폴백한다', () async {
+  test('키가 없으면 빈 목록을 반환하고 호출하지 않는다', () async {
     final repository = KakaoHospitalRepository(
       config: const KakaoApiConfig(restApiKey: ''),
       client: MockClient((request) async {
@@ -15,10 +15,9 @@ void main() {
       }),
     );
 
-    final result = await repository.findNearby('전북 남원시 향단로 10');
+    final result = await repository.findNearby('서울시 강남구 테헤란로 1');
 
-    expect(result, isNotEmpty);
-    expect(result.first.name, '남원의료원');
+    expect(result, isEmpty);
   });
 
   test('주소 지오코딩 후 병원을 거리순으로 매핑한다', () async {
@@ -115,7 +114,7 @@ void main() {
     expect(result.first.distance, '1.5km');
   });
 
-  test('지오코딩 결과가 없으면 더미로 폴백한다', () async {
+  test('지오코딩 결과가 없으면 빈 목록을 반환한다', () async {
     final repository = KakaoHospitalRepository(
       config: const KakaoApiConfig(restApiKey: 'test-key'),
       client: MockClient((request) async {
@@ -129,6 +128,6 @@ void main() {
 
     final result = await repository.findNearby('알 수 없는 주소');
 
-    expect(result.first.name, '남원의료원');
+    expect(result, isEmpty);
   });
 }
