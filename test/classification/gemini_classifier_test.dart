@@ -24,7 +24,7 @@ void main() {
     final classifier = classifierFor(
       MockClient((request) async {
         expect(request.url.path, '/v1beta/models/test-model:generateContent');
-        expect(request.url.queryParameters['key'], 'test-key');
+        expect(request.headers['x-goog-api-key'], 'test-key');
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody['generationConfig'], isA<Map<String, dynamic>>());
         return http.Response(

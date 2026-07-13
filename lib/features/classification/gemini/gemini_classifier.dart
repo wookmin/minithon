@@ -67,12 +67,14 @@ class GeminiClassifier implements NeedClassifier {
     final uri = Uri.https(
       'generativelanguage.googleapis.com',
       '/v1beta/models/${config.model}:generateContent',
-      {'key': config.apiKey},
     );
     return _client
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': config.apiKey,
+          },
           body: jsonEncode({
             'systemInstruction': {
               'parts': [

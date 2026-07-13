@@ -7,8 +7,10 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/ui/soft_card.dart';
+import '../analysis/analysis_pipeline.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
+import '../classification/need_classification_result.dart';
 import 'audio_transcription_providers.dart';
 import 'recording_candidate.dart';
 import 'recording_import_service.dart';
@@ -92,12 +94,23 @@ class _RecordingSetupScreenState extends ConsumerState<RecordingSetupScreen> {
         _showMessage(result.error ?? '전사에 실패했어요');
         return;
       }
+      // 전사 → 분류 → 기록 저장 → (니즈 있으면) 알림.
+      final analysis = await runNeedAnalysis(
+        ref,
+        text: result.text!,
+        recipientName: candidate.matchedRecipient?.name ?? '알 수 없음',
+        callTime: candidate.createdAt,
+      );
+      if (!mounted) return;
       await showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,
         isScrollControlled: true,
-        builder: (context) =>
-            _TranscriptSheet(candidate: candidate, transcript: result.text!),
+        builder: (context) => _TranscriptSheet(
+          candidate: candidate,
+          transcript: result.text!,
+          result: analysis,
+        ),
       );
     } on Object catch (error) {
       if (mounted) _showMessage('파일을 읽지 못했어요: $error');
@@ -435,14 +448,20 @@ class _RecordingCandidateCard extends StatelessWidget {
 }
 
 class _TranscriptSheet extends StatelessWidget {
-  const _TranscriptSheet({required this.candidate, required this.transcript});
+  const _TranscriptSheet({
+    required this.candidate,
+    required this.transcript,
+    required this.result,
+  });
 
   final RecordingCandidate candidate;
   final String transcript;
+  final NeedClassificationResult result;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final actionable = result.hasActionableNeed;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -454,7 +473,7 @@ class _TranscriptSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('STT 결과', style: Theme.of(context).textTheme.titleLarge),
+          Text('분석 결과', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 6),
           Text(
             candidate.fileName,
@@ -464,7 +483,38 @@ class _TranscriptSheet extends StatelessWidget {
               context,
             ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
           ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: actionable
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  actionable ? '니즈를 감지했어요' : '특별한 니즈가 없어요',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  actionable
+                      ? '${result.labels} · 알림을 보냈어요'
+                      : '알림을 보내지 않았어요',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
+          Text('통화 내용', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
           Container(
             constraints: const BoxConstraints(maxHeight: 320),
             padding: const EdgeInsets.all(16),

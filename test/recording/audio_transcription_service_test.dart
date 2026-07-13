@@ -22,7 +22,7 @@ void main() {
       config: config,
       client: MockClient((request) async {
         expect(request.url.path, '/v1beta/models/test-model:generateContent');
-        expect(request.url.queryParameters['key'], 'test-key');
+        expect(request.headers['x-goog-api-key'], 'test-key');
         sentBody = jsonDecode(request.body) as Map<String, dynamic>;
         return http.Response(
           jsonEncode({

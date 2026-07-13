@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 로그인한 본인의 데이터(돌봄 대상자·분석 기록)만 읽고 쓸 수 있다.
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 그 외 경로는 기본 차단.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

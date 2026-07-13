@@ -52,14 +52,16 @@ class AudioTranscriptionService {
     final uri = Uri.https(
       'generativelanguage.googleapis.com',
       '/v1beta/models/${config.model}:generateContent',
-      {'key': config.apiKey},
     );
 
     try {
       final response = await _client
           .post(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': config.apiKey,
+            },
             body: jsonEncode({
               'contents': [
                 {

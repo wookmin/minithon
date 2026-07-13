@@ -6,18 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../core/notifications/notification_providers.dart';
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 import '../../core/ui/category_visual.dart';
 import '../../core/ui/soft_card.dart';
-import '../analysis/analysis_history_providers.dart';
-import '../analysis/analysis_record.dart';
+import '../analysis/analysis_pipeline.dart';
+import '../care/care_models.dart';
 import '../care/care_providers.dart';
-import '../classification/classification_providers.dart';
 import '../classification/need_category.dart';
 import '../classification/need_classification_result.dart';
 import '../recording/audio_transcription_providers.dart';
+import '../recording/recording_candidate.dart';
+import '../recording/recording_matcher.dart';
 import '../recording/recording_repository.dart';
 import '../recording/shared_audio_providers.dart';
 import '../stt/stt_providers.dart';
@@ -63,12 +63,21 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
     }
   }
 
+  List<CareRecipient> _recipientList() =>
+      ref.read(careRecipientsProvider).asData?.value ?? const [];
+
   Future<void> _analyzeSharedAudio() async {
     if (_isAnalyzing || _isTranscribing) return;
 
     final path = ref.read(sharedAudioPathProvider);
     ref.read(sharedAudioPathProvider.notifier).set(null); // 소비
     if (path == null || path.isEmpty) return;
+
+    final recipients = _recipientList();
+    if (recipients.isEmpty) {
+      _showMessage('먼저 부모님을 등록해주세요');
+      return;
+    }
 
     setState(() => _isTranscribing = true);
     final Uint8List bytes;
@@ -82,7 +91,17 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
     }
     if (!mounted) return;
 
-    await _transcribeAndAnalyze(bytes, _mimeForExtension(path.split('.').last));
+    final candidate = const RecordingMatcher().match(
+      filePath: path,
+      displayName: path.split('/').last,
+      sourceType: RecordingImportSourceType.background,
+      recipients: recipients,
+    );
+    await _transcribeAndAnalyze(
+      bytes,
+      _mimeForExtension(path.split('.').last),
+      recipient: candidate.matchedRecipient ?? recipients.first,
+    );
   }
 
   @override
@@ -99,6 +118,12 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
 
   Future<void> _pickAndTranscribe() async {
     if (_isAnalyzing || _isTranscribing) return;
+
+    final recipients = _recipientList();
+    if (recipients.isEmpty) {
+      _showMessage('먼저 부모님을 등록해주세요');
+      return;
+    }
 
     final selection = await FilePicker.pickFiles(
       type: FileType.custom,
@@ -123,11 +148,27 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
       return;
     }
 
-    await _transcribeAndAnalyze(bytes, _mimeForExtension(file.extension));
+    final candidate = const RecordingMatcher().match(
+      filePath: file.name,
+      displayName: file.name,
+      sourceType: RecordingImportSourceType.manual,
+      recipients: recipients,
+    );
+    await _transcribeAndAnalyze(
+      bytes,
+      _mimeForExtension(file.extension),
+      recipient: candidate.matchedRecipient ?? recipients.first,
+    );
   }
 
   Future<void> _analyzeLatestRecording() async {
     if (_isAnalyzing || _isTranscribing) return;
+
+    final recipients = _recipientList();
+    if (recipients.isEmpty) {
+      _showMessage('먼저 부모님을 등록해주세요');
+      return;
+    }
 
     final granted = await _ensureAudioPermission();
     if (!mounted) return;
@@ -137,19 +178,33 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
     }
 
     setState(() => _isTranscribing = true);
-    final Uint8List? bytes;
-    final String name;
+    RecordingCandidate? matched;
+    Uint8List? bytes;
     try {
       final repository = ref.read(recordingRepositoryProvider);
       final recordings = await repository.recent(limit: 10);
-      if (recordings.isEmpty) {
+      const matcher = RecordingMatcher();
+      for (final recording in recordings) {
+        final candidate = matcher.match(
+          filePath: '${recording.relativePath}${recording.name}',
+          displayName: recording.name,
+          contentUri: recording.uri,
+          sourceType: RecordingImportSourceType.folderScan,
+          recipients: recipients,
+          createdAt: recording.dateAdded,
+        );
+        if (candidate.isMatched) {
+          matched = candidate;
+          break;
+        }
+      }
+      if (matched == null) {
         if (!mounted) return;
         setState(() => _isTranscribing = false);
-        _showMessage('최근 녹음 파일을 찾지 못했어요');
+        _showMessage('최근 녹음 중 등록된 부모님과 매칭되는 통화가 없어요');
         return;
       }
-      name = recordings.first.name;
-      bytes = await repository.readBytes(recordings.first.uri);
+      bytes = await repository.readBytes(matched.contentUri!);
     } on Object catch (error) {
       if (!mounted) return;
       setState(() => _isTranscribing = false);
@@ -164,7 +219,12 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
       return;
     }
 
-    await _transcribeAndAnalyze(bytes, _mimeForExtension(name.split('.').last));
+    await _transcribeAndAnalyze(
+      bytes,
+      _mimeForExtension(matched.fileName.split('.').last),
+      recipient: matched.matchedRecipient,
+      callTime: matched.createdAt,
+    );
   }
 
   Future<bool> _ensureAudioPermission() async {
@@ -175,7 +235,12 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
     return storage.isGranted;
   }
 
-  Future<void> _transcribeAndAnalyze(Uint8List bytes, String mimeType) async {
+  Future<void> _transcribeAndAnalyze(
+    Uint8List bytes,
+    String mimeType, {
+    CareRecipient? recipient,
+    DateTime? callTime,
+  }) async {
     setState(() => _isTranscribing = true);
     final service = ref.read(audioTranscriptionServiceProvider);
     final result = await service.transcribe(bytes: bytes, mimeType: mimeType);
@@ -188,7 +253,7 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
     }
 
     _controller.text = result.text!;
-    await _analyze();
+    await _analyze(recipient: recipient, callTime: callTime);
   }
 
   String _mimeForExtension(String? extension) {
@@ -212,21 +277,22 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
     }
   }
 
-  Future<void> _analyze() async {
+  Future<void> _analyze({CareRecipient? recipient, DateTime? callTime}) async {
     if (_isAnalyzing) return;
 
     setState(() => _isAnalyzing = true);
     final input = _controller.text.trim();
-    final classifier = ref.read(needClassifierProvider);
-    final result = await classifier.classify(input);
+    final recipientName =
+        recipient?.name ??
+        ref.read(careRecipientsProvider).asData?.value.firstOrNull?.name ??
+        '알 수 없음';
 
-    await _saveHistory(input, result);
-
-    if (result.hasActionableNeed) {
-      await ref
-          .read(notificationServiceProvider)
-          .showNeedNotification(result.primaryCategory);
-    }
+    final result = await runNeedAnalysis(
+      ref,
+      text: input,
+      recipientName: recipientName,
+      callTime: callTime,
+    );
 
     if (!mounted) return;
     setState(() {
@@ -234,48 +300,9 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
       _isAnalyzing = false;
     });
 
-    final message = !result.hasActionableNeed
-        ? '해당하는 니즈 없음 → 알림 없음'
-        : '분류: ${result.labels} → 알림 발송됨';
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<void> _saveHistory(String input, NeedClassificationResult result) {
-    final now = DateTime.now();
-    final normalized = input.replaceAll(RegExp(r'\s+'), ' ').trim();
-    final snippet = normalized.length > 60
-        ? '${normalized.substring(0, 60)}…'
-        : normalized;
-    final summary = _summaryFor(result, normalized);
-    return ref
-        .read(analysisHistoryProvider.notifier)
-        .add(
-          AnalysisRecord(
-            id: now.microsecondsSinceEpoch.toString(),
-            createdAt: now,
-            recipientName: _recipientNameForHistory(),
-            callTime: now,
-            categories: result.categories,
-            reason: result.reason,
-            summary: summary,
-            snippet: snippet,
-          ),
-        );
-  }
-
-  String _summaryFor(NeedClassificationResult result, String input) {
-    final reason = result.reason.trim();
-    if (reason.isNotEmpty) return reason;
-    if (input.length <= 90) return input;
-    return '${input.substring(0, 90)}…';
-  }
-
-  String _recipientNameForHistory() {
-    final recipients = ref.read(careRecipientsProvider).asData?.value;
-    if (recipients == null || recipients.isEmpty) return '알 수 없음';
-    return recipients.first.name;
+    _showMessage(
+      result.hasActionableNeed ? '분석을 완료했어요.' : '확인이 필요한 내용은 없었어요.',
+    );
   }
 
   Future<void> _toggleListening() async {
