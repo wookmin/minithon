@@ -50,6 +50,7 @@ dependencies:
   cloud_firestore: ^6.6.0
   google_sign_in: ^7.2.0
   kpostal: ^1.1.0
+  cloud_functions: ^6.3.3
 
 dev_dependencies:
   flutter_test:

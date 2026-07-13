@@ -1,95 +1,39 @@
-import 'dart:async';
-import 'dart:convert';
-
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 
+import '../../core/functions/functions_client.dart';
 import 'hospital.dart';
-import 'kakao_api_config.dart';
 
 /// 근처 병원 조회 경계 인터페이스.
 abstract interface class HospitalRepository {
   Future<List<Hospital>> findNearby(String address);
 }
 
-/// 카카오 로컬 API로 주소를 좌표로 바꾼 뒤 반경 내 병원(HP8)을 거리순으로 조회한다.
-class KakaoHospitalRepository implements HospitalRepository {
-  KakaoHospitalRepository({required this.config, http.Client? client})
-    : _client = client ?? http.Client();
+/// 서버(nearbyHospitals 함수)가 카카오 지오코딩 + 병원(HP8) 조회를 수행하고,
+/// 앱은 반환된 카카오 문서를 매핑한다. 카카오 REST 키는 서버 시크릿으로만 존재한다.
+class FunctionsHospitalRepository implements HospitalRepository {
+  FunctionsHospitalRepository({required this.invoke});
 
-  static const _host = 'dapi.kakao.com';
-
-  final KakaoApiConfig config;
-  final http.Client _client;
+  final CallableInvoker invoke;
 
   @override
   Future<List<Hospital>> findNearby(String address) async {
-    if (!config.hasKey || address.trim().isEmpty) {
-      return const [];
-    }
+    final query = address.trim();
+    if (query.isEmpty) return const [];
     try {
-      final coord = await _geocode(address);
-      if (coord == null) return const [];
-
-      return _searchHospitals(coord.$1, coord.$2);
+      final data = await invoke('nearbyHospitals', {'address': query});
+      final documents = data['hospitals'];
+      if (documents is! List) return const [];
+      return documents.map(_toHospital).whereType<Hospital>().toList();
+    } on FirebaseFunctionsException {
+      return const [];
     } on Object {
       return const [];
     }
   }
 
-  Map<String, String> get _headers => {
-    'Authorization': 'KakaoAK ${config.restApiKey}',
-  };
-
-  /// 주소 → (경도 x, 위도 y). 실패 시 null.
-  Future<(String, String)?> _geocode(String address) async {
-    final uri = Uri.https(_host, '/v2/local/search/address.json', {
-      'query': address,
-      'size': '1',
-    });
-    final response = await _client
-        .get(uri, headers: _headers)
-        .timeout(config.requestTimeout);
-    if (response.statusCode != 200) return null;
-
-    final documents = _documents(response.bodyBytes);
-    if (documents.isEmpty) return null;
-    final first = documents.first;
-    final x = first['x'];
-    final y = first['y'];
-    if (x is String && y is String) return (x, y);
-    return null;
-  }
-
-  Future<List<Hospital>> _searchHospitals(String x, String y) async {
-    final uri = Uri.https(_host, '/v2/local/search/category.json', {
-      'category_group_code': 'HP8',
-      'x': x,
-      'y': y,
-      'radius': '5000',
-      'sort': 'distance',
-      'size': '15',
-    });
-    final response = await _client
-        .get(uri, headers: _headers)
-        .timeout(config.requestTimeout);
-    if (response.statusCode != 200) return const [];
-
-    return _documents(
-      response.bodyBytes,
-    ).map(_toHospital).whereType<Hospital>().toList();
-  }
-
-  List<dynamic> _documents(List<int> bodyBytes) {
-    final decoded = jsonDecode(utf8.decode(bodyBytes));
-    if (decoded is Map<String, dynamic> && decoded['documents'] is List) {
-      return decoded['documents'] as List;
-    }
-    return const [];
-  }
-
   Hospital? _toHospital(dynamic doc) {
-    if (doc is! Map<String, dynamic>) return null;
+    if (doc is! Map) return null;
     final name = doc['place_name'] as String?;
     if (name == null || name.isEmpty) return null;
 
@@ -129,10 +73,6 @@ class KakaoHospitalRepository implements HospitalRepository {
   }
 }
 
-final kakaoApiConfigProvider = Provider<KakaoApiConfig>(
-  (ref) => KakaoApiConfig.fromEnv(),
-);
-
 final hospitalRepositoryProvider = Provider<HospitalRepository>(
-  (ref) => KakaoHospitalRepository(config: ref.watch(kakaoApiConfigProvider)),
+  (ref) => FunctionsHospitalRepository(invoke: ref.watch(callableInvokerProvider)),
 );
