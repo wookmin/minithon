@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 import '../../core/ui/address_field.dart';
+import '../../core/ui/favorite_hospital_field.dart';
 import '../../core/ui/phone_number_field.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
@@ -38,6 +39,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _phone = TextEditingController();
   final _address = TextEditingController();
   final _hospital = TextEditingController();
+  final _customRelationship = TextEditingController();
   String _relationship = '어머니';
   bool _busy = false;
 
@@ -47,6 +49,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _phone.dispose();
     _address.dispose();
     _hospital.dispose();
+    _customRelationship.dispose();
     super.dispose();
   }
 
@@ -61,8 +64,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final name = _name.text.trim();
     final phone = _phone.text.trim();
     final address = _address.text.trim();
+    final relationship = _resolvedRelationship;
     if (name.isEmpty || phone.isEmpty || address.isEmpty) {
       _snack('이름, 전화번호, 주소를 입력해주세요.');
+      return;
+    }
+    if (relationship.isEmpty) {
+      _snack('관계를 입력해주세요.');
       return;
     }
 
@@ -75,7 +83,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               id: DateTime.now().microsecondsSinceEpoch.toString(),
               name: name,
               phoneNumber: phone,
-              relationship: _relationship,
+              relationship: relationship,
               address: address,
               favoriteHospital: _hospital.text.trim(),
             ),
@@ -87,6 +95,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         _snack('저장에 실패했어요: $error');
       }
     }
+  }
+
+  String get _resolvedRelationship {
+    if (_relationship != '기타') return _relationship;
+    return _customRelationship.text.trim();
   }
 
   @override
@@ -135,6 +148,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
               ],
             ),
+            if (_relationship == '기타') ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _customRelationship,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: '관계 직접 입력',
+                  hintText: '예: 이모, 삼촌, 보호 대상자',
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             TextField(
               controller: _name,
@@ -153,11 +177,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             const SizedBox(height: 12),
             AddressField(controller: _address, hint: '주소 검색 (주변 병원에 사용)'),
             const SizedBox(height: 12),
-            TextField(
+            FavoriteHospitalField(
               controller: _hospital,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _save(),
-              decoration: const InputDecoration(labelText: '자주 가는 병원 (선택)'),
             ),
             const SizedBox(height: 26),
             FilledButton(

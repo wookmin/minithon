@@ -94,6 +94,10 @@ class _CareHero extends StatelessWidget {
     final c = context.colors;
     final needsReview = schedules.where((s) => s.status.contains('필요')).length;
     final nextSchedule = schedules.isEmpty ? null : schedules.first;
+    final recipientMeta = [
+      recipient.relationship,
+      if (recipient.favoriteHospital.isNotEmpty) recipient.favoriteHospital,
+    ].join(' · ');
     return SoftCard(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -125,7 +129,7 @@ class _CareHero extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${recipient.relationship} · ${recipient.favoriteHospital}',
+                      recipientMeta,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

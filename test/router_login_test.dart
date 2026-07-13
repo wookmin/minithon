@@ -124,7 +124,10 @@ void main() {
   });
 
   testWidgets('대상자가 있으면 로그인 후 홈으로 이동하고 탭 전환이 된다', (tester) async {
-    await _pumpApp(tester, firestore: await _firestoreWithRecipient('test-user'));
+    await _pumpApp(
+      tester,
+      firestore: await _firestoreWithRecipient('test-user'),
+    );
 
     await tester.enterText(find.byType(TextField).at(0), 'test@example.com');
     await tester.enterText(find.byType(TextField).at(1), 'password123');
@@ -186,6 +189,6 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '로그인'));
     await tester.pumpAndSettle();
 
-    expect(find.text('통화 분석 기록'), findsOneWidget);
+    expect(find.text('통화 분석 모아보기'), findsOneWidget);
   });
 }

@@ -13,6 +13,7 @@ import '../../core/ui/category_visual.dart';
 import '../../core/ui/soft_card.dart';
 import '../analysis/analysis_history_providers.dart';
 import '../analysis/analysis_record.dart';
+import '../care/care_providers.dart';
 import '../classification/classification_providers.dart';
 import '../classification/need_category.dart';
 import '../classification/need_classification_result.dart';
@@ -242,18 +243,39 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
   }
 
   Future<void> _saveHistory(String input, NeedClassificationResult result) {
-    final snippet = input.length > 60 ? '${input.substring(0, 60)}…' : input;
+    final now = DateTime.now();
+    final normalized = input.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final snippet = normalized.length > 60
+        ? '${normalized.substring(0, 60)}…'
+        : normalized;
+    final summary = _summaryFor(result, normalized);
     return ref
         .read(analysisHistoryProvider.notifier)
         .add(
           AnalysisRecord(
-            id: DateTime.now().microsecondsSinceEpoch.toString(),
-            createdAt: DateTime.now(),
+            id: now.microsecondsSinceEpoch.toString(),
+            createdAt: now,
+            recipientName: _recipientNameForHistory(),
+            callTime: now,
             categories: result.categories,
             reason: result.reason,
+            summary: summary,
             snippet: snippet,
           ),
         );
+  }
+
+  String _summaryFor(NeedClassificationResult result, String input) {
+    final reason = result.reason.trim();
+    if (reason.isNotEmpty) return reason;
+    if (input.length <= 90) return input;
+    return '${input.substring(0, 90)}…';
+  }
+
+  String _recipientNameForHistory() {
+    final recipients = ref.read(careRecipientsProvider).asData?.value;
+    if (recipients == null || recipients.isEmpty) return '알 수 없음';
+    return recipients.first.name;
   }
 
   Future<void> _toggleListening() async {

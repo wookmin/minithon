@@ -17,7 +17,7 @@ class CareRecipient {
       phoneNumber: json['phoneNumber'] as String,
       relationship: json['relationship'] as String? ?? '어머니',
       address: json['address'] as String,
-      favoriteHospital: json['favoriteHospital'] as String,
+      favoriteHospital: json['favoriteHospital'] as String? ?? '',
     );
   }
 

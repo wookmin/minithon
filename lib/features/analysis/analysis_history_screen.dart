@@ -20,7 +20,7 @@ class AnalysisHistoryScreen extends ConsumerWidget {
     final now = DateTime.now();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('통화 분석 기록')),
+      appBar: AppBar(title: const Text('통화 분석 모아보기')),
       body: records.isEmpty
           ? _Empty()
           : ListView.separated(
@@ -48,6 +48,7 @@ class _RecordCard extends StatelessWidget {
     final route = routeForCategory(record.primaryCategory);
     final accent = actionable ? visual.color : c.textSecondary;
     final soft = actionable ? visual.soft : c.hairline;
+    final summary = record.summary.isNotEmpty ? record.summary : record.reason;
 
     return SoftCard(
       onTap: actionable && route != null ? () => context.go(route) : null,
@@ -71,9 +72,22 @@ class _RecordCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  actionable ? visual.label : '특별한 니즈 없음',
-                  style: Theme.of(context).textTheme.titleMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      record.recipientName,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${record.callTimeLabel()} 통화',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: c.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Text(
@@ -83,11 +97,29 @@ class _RecordCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          if (record.reason.isNotEmpty)
-            Text(
-              record.reason,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: soft,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  actionable ? visual.label : '특별한 니즈 없음',
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (summary.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(summary, style: Theme.of(context).textTheme.bodyMedium),
+          ],
           if (record.snippet.isNotEmpty) ...[
             const SizedBox(height: 8),
             Container(
@@ -98,10 +130,9 @@ class _RecordCard extends StatelessWidget {
               ),
               child: Text(
                 '"${record.snippet}"',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 13,
-                  height: 1.4,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontSize: 13, height: 1.4),
               ),
             ),
           ],
@@ -124,12 +155,12 @@ class _Empty extends StatelessWidget {
             Icon(Icons.history_rounded, size: 44, color: c.textSecondary),
             const SizedBox(height: 14),
             Text(
-              '아직 분석한 통화가 없어요',
+              '아직 모아둔 통화 분석이 없어요',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 6),
             Text(
-              '통화를 분석하면 여기에 기록으로 쌓여요.',
+              '앞으로 분석한 통화의 상대, 시간, 주요 내용이 여기에 쌓여요.',
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,

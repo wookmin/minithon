@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 import '../../core/ui/address_field.dart';
+import '../../core/ui/favorite_hospital_field.dart';
 import '../../core/ui/phone_number_field.dart';
 import '../../core/ui/screen_header.dart';
 import '../../core/ui/soft_card.dart';
@@ -302,10 +303,11 @@ class _RecipientCard extends StatelessWidget {
           const SizedBox(height: 8),
           _InfoLine(icon: Icons.call_outlined, text: recipient.phoneNumber),
           _InfoLine(icon: Icons.home_outlined, text: recipient.address),
-          _InfoLine(
-            icon: Icons.local_hospital_outlined,
-            text: recipient.favoriteHospital,
-          ),
+          if (recipient.favoriteHospital.isNotEmpty)
+            _InfoLine(
+              icon: Icons.local_hospital_outlined,
+              text: recipient.favoriteHospital,
+            ),
         ],
       ),
     );
@@ -430,6 +432,7 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
   late final TextEditingController _hospitalController;
+  late final TextEditingController _customRelationshipController;
   late String _relationship;
 
   @override
@@ -444,7 +447,18 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
     _hospitalController = TextEditingController(
       text: recipient?.favoriteHospital ?? '',
     );
-    _relationship = recipient?.relationship ?? _relationshipOptions.first;
+    final savedRelationship = recipient?.relationship;
+    if (savedRelationship != null &&
+        savedRelationship.isNotEmpty &&
+        !_relationshipOptions.contains(savedRelationship)) {
+      _relationship = '기타';
+      _customRelationshipController = TextEditingController(
+        text: savedRelationship,
+      );
+    } else {
+      _relationship = savedRelationship ?? _relationshipOptions.first;
+      _customRelationshipController = TextEditingController();
+    }
   }
 
   @override
@@ -453,6 +467,7 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
     _phoneController.dispose();
     _addressController.dispose();
     _hospitalController.dispose();
+    _customRelationshipController.dispose();
     super.dispose();
   }
 
@@ -461,10 +476,17 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
     final phone = _phoneController.text.trim();
     final address = _addressController.text.trim();
     final hospital = _hospitalController.text.trim();
-    if ([name, phone, address, hospital].any((value) => value.isEmpty)) {
+    final relationship = _resolvedRelationship;
+    if ([name, phone, address].any((value) => value.isEmpty)) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('모든 정보를 입력해주세요.')));
+        ..showSnackBar(const SnackBar(content: Text('이름, 전화번호, 주소를 입력해주세요.')));
+      return;
+    }
+    if (relationship.isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('관계를 입력해주세요.')));
       return;
     }
 
@@ -474,12 +496,17 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
           DateTime.now().microsecondsSinceEpoch.toString(),
       name: name,
       phoneNumber: phone,
-      relationship: _relationship,
+      relationship: relationship,
       address: address,
       favoriteHospital: hospital,
     );
     await ref.read(careRecipientsProvider.notifier).save(recipient);
     if (mounted) Navigator.of(context).pop();
+  }
+
+  String get _resolvedRelationship {
+    if (_relationship != '기타') return _relationship;
+    return _customRelationshipController.text.trim();
   }
 
   @override
@@ -529,11 +556,18 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
             },
           ),
           const SizedBox(height: 10),
+          if (_relationship == '기타') ...[
+            _Field(
+              controller: _customRelationshipController,
+              label: '관계 직접 입력',
+            ),
+            const SizedBox(height: 2),
+          ],
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: AddressField(controller: _addressController),
           ),
-          _Field(controller: _hospitalController, label: '자주 가는 병원'),
+          FavoriteHospitalField(controller: _hospitalController),
           const SizedBox(height: 14),
           FilledButton(onPressed: _save, child: const Text('저장하기')),
         ],

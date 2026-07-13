@@ -11,8 +11,11 @@ void main() {
     final record = AnalysisRecord(
       id: 'r1',
       createdAt: DateTime.parse('2026-07-12T10:00:00.000'),
+      recipientName: '김영희',
+      callTime: DateTime.parse('2026-07-12T09:55:00.000'),
       categories: const [NeedCategory.hospital, NeedCategory.general],
       reason: '허리 통증과 전등 교체 언급',
+      summary: '허리 통증과 전등 교체를 이야기함',
       snippet: '허리가 아프고 전등도 나갔어',
     );
 
@@ -21,8 +24,11 @@ void main() {
     expect(restored.id, 'r1');
     expect(restored.categories, [NeedCategory.hospital, NeedCategory.general]);
     expect(restored.reason, record.reason);
+    expect(restored.summary, record.summary);
     expect(restored.snippet, record.snippet);
     expect(restored.createdAt, record.createdAt);
+    expect(restored.recipientName, record.recipientName);
+    expect(restored.callTime, record.callTime);
     expect(restored.hasActionableNeed, isTrue);
   });
 

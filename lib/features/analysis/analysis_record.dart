@@ -2,13 +2,18 @@ import '../classification/need_category.dart';
 
 /// 한 번의 통화 분석 결과 기록. (로컬 저장용 — 나중에 서버/DB로 교체 가능)
 class AnalysisRecord {
-  const AnalysisRecord({
+  AnalysisRecord({
     required this.id,
     required this.createdAt,
     required this.categories,
     required this.reason,
     required this.snippet,
-  });
+    String? recipientName,
+    DateTime? callTime,
+    String? summary,
+  }) : recipientName = _nonEmptyOr(recipientName, '알 수 없음'),
+       callTime = callTime ?? createdAt,
+       summary = _nonEmptyOr(summary, reason);
 
   factory AnalysisRecord.fromJson(Map<String, dynamic> json) {
     final rawCategories = json['categories'];
@@ -19,21 +24,30 @@ class AnalysisRecord {
               .nonNulls
               .toList()
         : <NeedCategory>[NeedCategory.none];
+    final createdAt =
+        DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+    final callTime =
+        DateTime.tryParse(json['callTime'] as String? ?? '') ?? createdAt;
     return AnalysisRecord(
       id: json['id'] as String? ?? '',
-      createdAt:
-          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt: createdAt,
+      recipientName: json['recipientName'] as String?,
+      callTime: callTime,
       categories: categories.isEmpty ? [NeedCategory.none] : categories,
       reason: json['reason'] as String? ?? '',
+      summary: json['summary'] as String?,
       snippet: json['snippet'] as String? ?? '',
     );
   }
 
   final String id;
   final DateTime createdAt;
+  final String recipientName;
+  final DateTime callTime;
   final List<NeedCategory> categories;
   final String reason;
+  final String summary;
   final String snippet;
 
   bool get hasActionableNeed =>
@@ -45,19 +59,34 @@ class AnalysisRecord {
     return {
       'id': id,
       'createdAt': createdAt.toIso8601String(),
+      'recipientName': recipientName,
+      'callTime': callTime.toIso8601String(),
       'categories': categories.map((category) => category.apiValue).toList(),
       'reason': reason,
+      'summary': summary,
       'snippet': snippet,
     };
   }
 
   String relativeTime(DateTime now) {
-    final diff = now.difference(createdAt);
+    final diff = now.difference(callTime);
     if (diff.inMinutes < 1) return '방금 전';
     if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
     if (diff.inHours < 24) return '${diff.inHours}시간 전';
     if (diff.inDays == 1) return '어제';
     if (diff.inDays < 7) return '${diff.inDays}일 전';
-    return '${createdAt.month}월 ${createdAt.day}일';
+    return '${callTime.month}월 ${callTime.day}일';
   }
+
+  String callTimeLabel() {
+    final hour = callTime.hour.toString().padLeft(2, '0');
+    final minute = callTime.minute.toString().padLeft(2, '0');
+    return '${callTime.month}월 ${callTime.day}일 $hour:$minute';
+  }
+}
+
+String _nonEmptyOr(String? value, String fallback) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) return fallback;
+  return trimmed;
 }
