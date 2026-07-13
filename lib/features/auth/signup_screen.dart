@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors_x.dart';
+import '../care/care_models.dart';
+import '../care/care_providers.dart';
 import 'auth_providers.dart';
 import 'auth_repository.dart';
 import 'auth_widgets.dart';
@@ -53,6 +55,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       await ref
           .read(authRepositoryProvider)
           .signUpWithEmail(email: email, password: password, name: name);
+      await ref
+          .read(myProfileProvider.notifier)
+          .save(MyProfile(name: name, phoneNumber: ''));
       // 가입 직후엔 부모님 등록 온보딩으로.
       if (mounted) context.go('/onboarding');
     } on Object catch (error) {

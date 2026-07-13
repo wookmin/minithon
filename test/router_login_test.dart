@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -89,7 +90,11 @@ Future<void> _pumpApp(
   _FakeAuthRepository? authRepository,
   FakeFirebaseFirestore? firestore,
 }) async {
-  SharedPreferences.setMockInitialValues({});
+  // 자동 분석을 켜진 상태로 시드해 홈에서 설정 유도 시트가 뜨지 않게 한다.
+  SharedPreferences.setMockInitialValues({
+    'recordingSetupState':
+        '{"isCompleted":true,"backgroundDetectionEnabled":true}',
+  });
   final prefs = await SharedPreferences.getInstance();
   final auth = authRepository ?? _FakeAuthRepository();
   addTearDown(auth.dispose);
@@ -155,6 +160,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('누구를 돌보고 계신가요?'), findsOneWidget);
+  });
+
+  testWidgets('회원가입 이름은 내 정보 기본값으로 저장된다', (tester) async {
+    await _pumpApp(tester, initialLocation: '/signup');
+
+    await tester.enterText(find.byType(TextField).at(0), '이민욱');
+    await tester.enterText(find.byType(TextField).at(1), 'minwook@example.com');
+    await tester.enterText(find.byType(TextField).at(2), 'password123');
+    await tester.tap(find.widgetWithText(FilledButton, '가입하고 시작하기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('누구를 돌보고 계신가요?'), findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    final saved = jsonDecode(prefs.getString('myProfile')!);
+    expect(saved['name'], '이민욱');
+    expect(saved['phoneNumber'], '');
   });
 
   testWidgets('미로그인 딥링크는 로그인 화면으로 보호된다', (tester) async {

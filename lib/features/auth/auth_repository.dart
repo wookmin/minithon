@@ -38,7 +38,10 @@ class AppUser {
 abstract interface class AuthRepository {
   Stream<AppUser?> authStateChanges();
   AppUser? get currentUser;
-  Future<void> signInWithEmail({required String email, required String password});
+  Future<void> signInWithEmail({
+    required String email,
+    required String password,
+  });
   Future<void> signUpWithEmail({
     required String email,
     required String password,
@@ -66,7 +69,7 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Stream<AppUser?> authStateChanges() => _auth.authStateChanges().map(_map);
+  Stream<AppUser?> authStateChanges() => _auth.userChanges().map(_map);
 
   @override
   AppUser? get currentUser => _map(_auth.currentUser);

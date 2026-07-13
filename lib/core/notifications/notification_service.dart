@@ -17,6 +17,8 @@ class NotificationService {
   static const _channelName = '니즈 알림';
   static const _channelDescription = '부모님 니즈가 발견되면 알려줍니다.';
 
+  static const _reminderNotificationId = 9001;
+
   /// 알림 탭 시 이동할 라우트를 전달받는 콜백. (main에서 라우터에 연결)
   void Function(String route)? onSelectRoute;
 
@@ -98,6 +100,34 @@ class NotificationService {
         iOS: iosDetails,
       ),
       payload: route,
+    );
+  }
+
+  /// 자동 통화 분석이 꺼져 있음을 알리는 리마인더. 탭하면 녹음 연결 화면으로.
+  Future<void> showAnalysisOffReminder() async {
+    const androidDetails = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: _channelDescription,
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBanner: true,
+      presentList: true,
+      presentSound: true,
+    );
+
+    await _plugin.show(
+      id: _reminderNotificationId,
+      title: '자동 통화 분석이 꺼져 있어요',
+      body: '통화 후 부모님의 니즈를 놓칠 수 있어요. 탭해서 켜주세요.',
+      notificationDetails: const NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
+      payload: '/recording-setup',
     );
   }
 

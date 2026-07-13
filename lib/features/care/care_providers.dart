@@ -60,17 +60,26 @@ class MyProfileNotifier extends AsyncNotifier<MyProfile> {
   Future<MyProfile> build() async {
     final prefs = ref.watch(sharedPreferencesProvider);
     final source = prefs.getString(_myProfileKey);
+    final authProfile = _profileFromAuth();
     if (source != null && source.isNotEmpty) {
       try {
         final decoded = jsonDecode(source);
         if (decoded is Map<String, dynamic>) {
-          return MyProfile.fromJson(decoded);
+          final saved = MyProfile.fromJson(decoded);
+          final savedName = saved.name.trim();
+          return MyProfile(
+            name: savedName.isNotEmpty ? savedName : authProfile.name,
+            phoneNumber: saved.phoneNumber,
+          );
         }
       } on Object {
         // 저장 형식이 깨졌으면 아래 로그인 사용자 정보로 폴백.
       }
     }
-    // 저장된 프로필이 없으면 로그인한 사용자 정보에서 이름을 가져온다.
+    return authProfile;
+  }
+
+  MyProfile _profileFromAuth() {
     final user = ref.watch(authStateProvider).asData?.value;
     final displayName = user?.displayName?.trim();
     final name = (displayName != null && displayName.isNotEmpty)

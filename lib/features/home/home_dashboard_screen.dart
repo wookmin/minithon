@@ -13,6 +13,7 @@ import '../analysis/analysis_history_providers.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
 import '../onboarding/onboarding_screen.dart';
+import '../recording/analysis_setup_prompt.dart';
 
 class HomeDashboardScreen extends ConsumerWidget {
   const HomeDashboardScreen({super.key});
@@ -20,17 +21,30 @@ class HomeDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recipients = ref.watch(careRecipientsProvider);
-    final recording = ref.watch(recordingSetupProvider);
     final schedules = ref.watch(careSchedulesProvider);
+    final setup = ref.watch(recordingSetupProvider).asData?.value;
 
-    // 로그인 uid가 확정되고, 대상자가 하나도 없으면 세션 최초 1회 온보딩을 띄운다.
     final uidReady = ref.watch(currentUidProvider) != null;
+    final hasRecipient = recipients.asData?.value.isNotEmpty ?? false;
     final noRecipient = uidReady && (recipients.asData?.value.isEmpty ?? false);
+
     if (noRecipient && !ref.watch(onboardingPromptedProvider)) {
+      // 대상자가 없으면 온보딩 우선.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
         ref.read(onboardingPromptedProvider.notifier).markPrompted();
         context.push('/onboarding');
+      });
+    } else if (uidReady &&
+        hasRecipient &&
+        setup != null &&
+        !setup.backgroundDetectionEnabled &&
+        !ref.watch(analysisSetupPromptedProvider)) {
+      // 대상자는 있는데 자동 분석이 꺼져 있으면 세션 1회 설정을 유도.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ref.read(analysisSetupPromptedProvider.notifier).markPrompted();
+        showAnalysisSetupSheet(context, ref);
       });
     }
 
@@ -44,13 +58,6 @@ class HomeDashboardScreen extends ConsumerWidget {
           loading: () => const _LoadingCard(height: 184),
           error: (_, _) =>
               _AddParentCard(onTap: () => context.push('/onboarding')),
-        ),
-        const SizedBox(height: 14),
-        recording.when(
-          data: (state) => _AnalysisCard(state: state),
-          loading: () => const _LoadingCard(height: 88),
-          error: (_, _) =>
-              const _AnalysisCard(state: RecordingSetupState.incomplete()),
         ),
         const SizedBox(height: 22),
         _QuickActions(
@@ -301,66 +308,6 @@ class _StatusPill extends StatelessWidget {
           color: color,
           fontSize: 12,
           fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _AnalysisCard extends StatelessWidget {
-  const _AnalysisCard({required this.state});
-
-  final RecordingSetupState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final active = state.isCompleted;
-    final color = scheme.primary;
-    return Material(
-      color: scheme.primaryContainer,
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push('/recording-setup'),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              Icon(
-                active
-                    ? Icons.check_circle_rounded
-                    : Icons.auto_awesome_rounded,
-                color: color,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      active ? '자동 분석 켜짐' : '자동 분석 설정 필요',
-                      style: TextStyle(
-                        color: scheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      active
-                          ? '통화 후 확인할 내용이 있으면 알려드려요.'
-                          : '통화 녹음 설정을 한 번만 확인해주세요.',
-                      style: TextStyle(
-                        color: scheme.onPrimaryContainer.withValues(alpha: 0.8),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: color),
-            ],
-          ),
         ),
       ),
     );
