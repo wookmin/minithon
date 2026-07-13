@@ -7,7 +7,10 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/ui/soft_card.dart';
+import '../../core/notifications/notification_providers.dart';
+import '../analysis/analysis_history_providers.dart';
 import '../analysis/analysis_pipeline.dart';
+import '../classification/classification_providers.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
 import '../classification/need_classification_result.dart';
@@ -98,7 +101,9 @@ class _RecordingSetupScreenState extends ConsumerState<RecordingSetupScreen> {
       }
       // 전사 → 분류 → 기록 저장 → (니즈 있으면) 알림.
       final analysis = await runNeedAnalysis(
-        ref,
+        classifier: ref.read(needClassifierProvider),
+        history: ref.read(analysisHistoryProvider.notifier),
+        notifications: ref.read(notificationServiceProvider),
         text: result.text!,
         recipientName: candidate.matchedRecipient?.name ?? '알 수 없음',
         callTime: candidate.createdAt,

@@ -51,4 +51,6 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.core:core-ktx:1.13.1")
+    // 통화 종료 시 앱이 종료돼 있어도 백그라운드 분석을 실행하기 위한 WorkManager.
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 }

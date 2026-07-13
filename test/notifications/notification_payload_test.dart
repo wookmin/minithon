@@ -9,4 +9,18 @@ void main() {
     expect(routeForCategory(NeedCategory.professional), '/professional');
     expect(routeForCategory(NeedCategory.none), isNull);
   });
+
+  test('"없음"은 알림 콘텐츠가 없고, 나머지는 제목/본문을 가진다', () {
+    expect(notificationContentFor(NeedCategory.none), isNull);
+    for (final category in [
+      NeedCategory.hospital,
+      NeedCategory.general,
+      NeedCategory.professional,
+    ]) {
+      final content = notificationContentFor(category);
+      expect(content, isNotNull);
+      expect(content!.title, isNotEmpty);
+      expect(content.body, isNotEmpty);
+    }
+  });
 }

@@ -11,7 +11,10 @@ import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 import '../../core/ui/category_visual.dart';
 import '../../core/ui/soft_card.dart';
+import '../../core/notifications/notification_providers.dart';
+import '../analysis/analysis_history_providers.dart';
 import '../analysis/analysis_pipeline.dart';
+import '../classification/classification_providers.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
 import '../classification/need_category.dart';
@@ -289,7 +292,9 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
         '알 수 없음';
 
     final result = await runNeedAnalysis(
-      ref,
+      classifier: ref.read(needClassifierProvider),
+      history: ref.read(analysisHistoryProvider.notifier),
+      notifications: ref.read(notificationServiceProvider),
       text: input,
       recipientName: recipientName,
       callTime: callTime,

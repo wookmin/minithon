@@ -13,6 +13,10 @@ import 'core/notifications/notification_service.dart';
 import 'features/auth/auth_providers.dart';
 import 'features/auth/auth_repository.dart';
 import 'features/care/care_providers.dart';
+// 백그라운드 통화 분석 진입점(backgroundCallAnalysisMain)을 앱 스냅샷에 포함시키기 위한 import.
+// 네이티브 WorkManager가 함수명으로 실행하므로, 이 라이브러리가 컴파일에 포함돼야 한다.
+// ignore: unused_import
+import 'features/recording/background_call_analysis.dart';
 import 'features/recording/recording_repository.dart';
 import 'router.dart';
 
