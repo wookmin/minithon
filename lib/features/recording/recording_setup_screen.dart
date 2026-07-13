@@ -38,6 +38,8 @@ class _RecordingSetupScreenState extends ConsumerState<RecordingSetupScreen> {
       Permission.storage,
       Permission.notification,
     ].request();
+    // 삼성 등에서 절전으로 리시버가 죽지 않도록 배터리 최적화 예외를 요청(시스템 팝업).
+    await Permission.ignoreBatteryOptimizations.request();
   }
 
   Future<void> _pickManual(List<CareRecipient> recipients) async {

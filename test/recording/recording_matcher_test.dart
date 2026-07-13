@@ -50,6 +50,30 @@ void main() {
     expect(candidate.matchedRecipient?.name, '김순자');
   });
 
+  test('이름에 공백이 있어도 삼성 통화녹음 파일명과 매칭한다', () {
+    const spaced = [
+      CareRecipient(
+        id: 'recipient-2',
+        name: '멋사 조현욱',
+        phoneNumber: '010-7577-8343',
+        relationship: '아버지',
+        address: '서울시 강남구 테헤란로 1',
+        favoriteHospital: '가까운 병원',
+      ),
+    ];
+
+    final candidate = matcher.match(
+      filePath: '/storage/emulated/0/Recordings/Call/',
+      displayName: '통화 녹음 멋사 조현욱_260713_203441.m4a',
+      sourceType: RecordingImportSourceType.folderScan,
+      recipients: spaced,
+    );
+
+    expect(candidate.matchType, RecordingMatchType.name);
+    expect(candidate.matchedRecipient?.name, '멋사 조현욱');
+    expect(candidate.isMatched, isTrue);
+  });
+
   test('등록된 정보와 맞지 않는 녹음은 분석 대상으로 보지 않는다', () {
     final candidate = matcher.match(
       filePath: '/recordings/unknown_010-9999-8888.m4a',

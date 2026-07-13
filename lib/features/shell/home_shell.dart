@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 
-/// 하단 5탭 컨테이너. 상단엔 브랜드 워드마크 + 분석 기록 진입 버튼.
+/// 하단 5탭 컨테이너. 상단엔 브랜드 워드마크 + 알림(분석 기록) · 분석 시작 버튼.
 class HomeShell extends StatelessWidget {
   const HomeShell({super.key, required this.navigationShell});
 
@@ -153,8 +153,8 @@ class _ProductHeader extends StatelessWidget {
                 ),
               ),
               _HeaderIconButton(
-                icon: Icons.auto_awesome_rounded,
-                tooltip: '분석 기록',
+                icon: Icons.notifications_none_rounded,
+                tooltip: '알림',
                 onTap: onAnalyze,
               ),
               const SizedBox(width: 8),

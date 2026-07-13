@@ -35,7 +35,9 @@ class RecordingMatcher {
 
     final normalizedNameSource = searchable.replaceAll(RegExp(r'\s+'), '');
     for (final recipient in recipients) {
-      final name = recipient.name.trim();
+      // 파일명 쪽 공백을 제거하므로 대상자 이름도 공백을 제거해 비교한다.
+      // (삼성 통화녹음 "통화 녹음 멋사 조현욱_..." ↔ 대상자 "멋사 조현욱")
+      final name = recipient.name.replaceAll(RegExp(r'\s+'), '');
       if (name.isEmpty) continue;
       if (normalizedNameSource.contains(name)) {
         return RecordingCandidate(

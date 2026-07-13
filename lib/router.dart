@@ -15,6 +15,7 @@ import 'features/home/home_dashboard_screen.dart';
 import 'features/hospital/hospital_screen.dart';
 import 'features/my/my_page_screen.dart';
 import 'features/professional/professional_screen.dart';
+import 'features/recording/recording_diagnostic_screen.dart';
 import 'features/recording/recording_setup_screen.dart';
 import 'features/shell/home_shell.dart';
 
@@ -135,6 +136,11 @@ GoRouter createRouter({
         path: '/analysis-history',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const AnalysisHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/recording-diagnostic',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const RecordingDiagnosticScreen(),
       ),
     ],
   );

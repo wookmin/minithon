@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/theme/app_colors_x.dart';
@@ -455,6 +456,12 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
                         : _analyzeLatestRecording,
                     icon: const Icon(Icons.history_rounded, size: 20),
                     label: const Text('최근 통화 녹음 분석'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton.icon(
+                    onPressed: () => context.push('/recording-diagnostic'),
+                    icon: const Icon(Icons.bug_report_outlined, size: 20),
+                    label: const Text('녹음 접근 진단'),
                   ),
                 ],
               ],
