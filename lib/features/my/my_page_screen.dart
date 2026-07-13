@@ -234,9 +234,14 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
     } on Object catch (error) {
       if (mounted) {
         setState(() => _busy = false);
+        debugPrint('저장 실패: $error');
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text('저장에 실패했어요: $error')));
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('저장에 실패했어요. 네트워크 상태를 확인하고 다시 시도해주세요.'),
+            ),
+          );
       }
     }
   }
@@ -276,9 +281,12 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
           FilledButton(
             onPressed: _busy ? null : _save,
             child: _busy
-                ? const SizedBox.square(
+                ? SizedBox.square(
                     dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
                   )
                 : const Text('저장하기'),
           ),
@@ -529,9 +537,14 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
     } on Object catch (error) {
       if (mounted) {
         setState(() => _busy = false);
+        debugPrint('저장 실패: $error');
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text('저장에 실패했어요: $error')));
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('저장에 실패했어요. 네트워크 상태를 확인하고 다시 시도해주세요.'),
+            ),
+          );
       }
     }
   }
@@ -604,9 +617,12 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
           FilledButton(
             onPressed: _busy ? null : _save,
             child: _busy
-                ? const SizedBox.square(
+                ? SizedBox.square(
                     dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
                   )
                 : const Text('저장하기'),
           ),

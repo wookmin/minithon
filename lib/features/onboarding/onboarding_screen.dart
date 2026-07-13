@@ -92,7 +92,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     } on Object catch (error) {
       if (mounted) {
         setState(() => _busy = false);
-        _snack('저장에 실패했어요: $error');
+        debugPrint('대상자 저장 실패: $error');
+        _snack('저장에 실패했어요. 네트워크 상태를 확인하고 다시 시도해주세요.');
       }
     }
   }

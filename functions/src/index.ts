@@ -28,12 +28,23 @@ const DAILY_LIMITS = {classify: 200, transcribe: 50, hospitals: 100} as const;
  * 사용자·일자별 호출 수를 Firestore에 원자적으로 증가시키고, 상한 초과 시 차단한다.
  * (admin SDK는 보안 규칙을 우회하므로 rate_limits 컬렉션은 서버 전용)
  */
+// 사용자 타임존(Asia/Seoul) 기준 yyyy-mm-dd. "오늘"의 리셋 시각을 사용자와 일치시킨다.
+function kstDayKey(): string {
+  return new Intl.DateTimeFormat("en-CA", {timeZone: "Asia/Seoul"}).format(
+    new Date()
+  );
+}
+
 async function enforceDailyQuota(
   uid: string,
   action: keyof typeof DAILY_LIMITS
 ): Promise<void> {
-  const day = new Date().toISOString().slice(0, 10); // UTC yyyy-mm-dd
-  const ref = db.collection("rate_limits").doc(`${uid}_${day}`);
+  // uid를 문자열 연결 대신 개별 path 세그먼트로 사용(잘못된 문서 경로 방지 + 조회/TTL 용이).
+  const ref = db
+    .collection("rate_limits")
+    .doc(uid)
+    .collection("days")
+    .doc(kstDayKey());
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const current = (snap.get(action) as number | undefined) ?? 0;
