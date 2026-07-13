@@ -47,6 +47,61 @@ void main() {
     expect(saved.length, 1);
   });
 
+  test('CareRecipient.fromJson은 누락 필드에도 throw 없이 기본값을 채운다', () {
+    final recipient = CareRecipient.fromJson(const {
+      'id': 'r1',
+      'name': '김순자',
+      'phoneNumber': '010-1234-5678',
+      // address / relationship / favoriteHospital 누락(구버전 문서)
+    });
+
+    expect(recipient.address, '');
+    expect(recipient.relationship, '어머니');
+    expect(recipient.favoriteHospital, '');
+  });
+
+  test('손상 문서(식별자·이름 없음)는 목록에서 제외되고 나머지는 정상 로드된다', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final firestore = FakeFirebaseFirestore();
+    final recipients = firestore
+        .collection('users')
+        .doc('test-uid')
+        .collection('recipients');
+    // 정상 문서
+    await recipients.doc('good').set(const {
+      'id': 'good',
+      'name': '박영수',
+      'phoneNumber': '010-1111-2222',
+      'relationship': '아버지',
+      'address': '서울시 송파구 올림픽로 1',
+      'favoriteHospital': '서울아산병원',
+    });
+    // 구버전 부분 문서(주소 등 누락) — throw 없이 로드돼야 함
+    await recipients.doc('legacy').set(const {
+      'id': 'legacy',
+      'name': '김순자',
+      'phoneNumber': '010-3333-4444',
+    });
+    // 손상 문서(식별자·이름 없음) — 제외돼야 함
+    await recipients.doc('broken').set(const {'phoneNumber': '010-0000-0000'});
+
+    final container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        firebaseFirestoreProvider.overrideWithValue(firestore),
+        currentUidProvider.overrideWithValue('test-uid'),
+        authStateProvider.overrideWith((ref) => Stream<AppUser?>.value(null)),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final loaded = await container.read(careRecipientsProvider.future);
+    expect(loaded.map((r) => r.id), containsAll(['good', 'legacy']));
+    expect(loaded.any((r) => r.id.isEmpty), isFalse);
+    expect(loaded.length, 2);
+  });
+
   test('자동녹음 등록 완료 상태를 저장한다', () async {
     final container = await containerWithPrefs();
     addTearDown(container.dispose);

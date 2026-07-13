@@ -1,6 +1,8 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import {setGlobalOptions} from "firebase-functions/v2";
+import {initializeApp} from "firebase-admin/app";
+import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {
   GEMINI_ENDPOINT,
   GEMINI_MODEL,
@@ -13,14 +15,48 @@ const KAKAO_REST_API_KEY = defineSecret("KAKAO_REST_API_KEY");
 
 setGlobalOptions({region: "asia-northeast3"});
 
+initializeApp();
+const db = getFirestore();
+
 // App Check 클라이언트 설정 완료 후 true 로 바꿔 봇/외부 호출을 차단하세요.
 const ENFORCE_APP_CHECK = false;
+
+// 사용자당 일일 호출 상한. 외부 API(Gemini/Kakao) 비용 남용을 막는다.
+const DAILY_LIMITS = {classify: 200, transcribe: 50, hospitals: 100} as const;
+
+/**
+ * 사용자·일자별 호출 수를 Firestore에 원자적으로 증가시키고, 상한 초과 시 차단한다.
+ * (admin SDK는 보안 규칙을 우회하므로 rate_limits 컬렉션은 서버 전용)
+ */
+async function enforceDailyQuota(
+  uid: string,
+  action: keyof typeof DAILY_LIMITS
+): Promise<void> {
+  const day = new Date().toISOString().slice(0, 10); // UTC yyyy-mm-dd
+  const ref = db.collection("rate_limits").doc(`${uid}_${day}`);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const current = (snap.get(action) as number | undefined) ?? 0;
+    if (current >= DAILY_LIMITS[action]) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "오늘 사용 한도를 초과했어요. 내일 다시 시도해주세요."
+      );
+    }
+    tx.set(
+      ref,
+      {[action]: current + 1, updatedAt: FieldValue.serverTimestamp()},
+      {merge: true}
+    );
+  });
+}
 
 // 1) 통화 텍스트 → 니즈 분류
 export const classifyNeed = onCall(
   {secrets: [GEMINI_API_KEY], enforceAppCheck: ENFORCE_APP_CHECK},
   async (req) => {
     if (!req.auth) throw new HttpsError("unauthenticated", "로그인이 필요합니다.");
+    await enforceDailyQuota(req.auth.uid, "classify");
     const text = String(req.data?.text ?? "").trim();
     if (text.length === 0) {
       return {categories: ["none"], confidence: 1, reason: "빈 텍스트"};
@@ -57,6 +93,7 @@ export const transcribeAudio = onCall(
   {secrets: [GEMINI_API_KEY], enforceAppCheck: ENFORCE_APP_CHECK},
   async (req) => {
     if (!req.auth) throw new HttpsError("unauthenticated", "로그인이 필요합니다.");
+    await enforceDailyQuota(req.auth.uid, "transcribe");
     const audioBase64 = String(req.data?.audioBase64 ?? "");
     const mimeType = String(req.data?.mimeType ?? "audio/mp4");
     if (audioBase64.length === 0) {
@@ -102,6 +139,7 @@ export const nearbyHospitals = onCall(
   {secrets: [KAKAO_REST_API_KEY], enforceAppCheck: ENFORCE_APP_CHECK},
   async (req) => {
     if (!req.auth) throw new HttpsError("unauthenticated", "로그인이 필요합니다.");
+    await enforceDailyQuota(req.auth.uid, "hospitals");
     const address = String(req.data?.address ?? "").trim();
     if (address.length === 0) return {hospitals: []};
 

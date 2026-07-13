@@ -198,6 +198,7 @@ class _MyProfileFormSheet extends ConsumerStatefulWidget {
 class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -214,6 +215,7 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
   }
 
   Future<void> _save() async {
+    if (_busy) return;
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
     if ([name, phone].any((value) => value.isEmpty)) {
@@ -223,10 +225,20 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
       return;
     }
 
-    await ref
-        .read(myProfileProvider.notifier)
-        .save(MyProfile(name: name, phoneNumber: phone));
-    if (mounted) Navigator.of(context).pop();
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(myProfileProvider.notifier)
+          .save(MyProfile(name: name, phoneNumber: phone));
+      if (mounted) Navigator.of(context).pop();
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() => _busy = false);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text('저장에 실패했어요: $error')));
+      }
+    }
   }
 
   @override
@@ -261,7 +273,15 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
             textInputAction: TextInputAction.done,
           ),
           const SizedBox(height: 14),
-          FilledButton(onPressed: _save, child: const Text('저장하기')),
+          FilledButton(
+            onPressed: _busy ? null : _save,
+            child: _busy
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('저장하기'),
+          ),
         ],
       ),
     );
@@ -433,6 +453,7 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
   late final TextEditingController _addressController;
   late final TextEditingController _hospitalController;
   late final TextEditingController _customRelationshipController;
+  bool _busy = false;
   late String _relationship;
 
   @override
@@ -472,6 +493,7 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
   }
 
   Future<void> _save() async {
+    if (_busy) return;
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
     final address = _addressController.text.trim();
@@ -500,8 +522,18 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
       address: address,
       favoriteHospital: hospital,
     );
-    await ref.read(careRecipientsProvider.notifier).save(recipient);
-    if (mounted) Navigator.of(context).pop();
+    setState(() => _busy = true);
+    try {
+      await ref.read(careRecipientsProvider.notifier).save(recipient);
+      if (mounted) Navigator.of(context).pop();
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() => _busy = false);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text('저장에 실패했어요: $error')));
+      }
+    }
   }
 
   String get _resolvedRelationship {
@@ -569,7 +601,15 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
           ),
           FavoriteHospitalField(controller: _hospitalController),
           const SizedBox(height: 14),
-          FilledButton(onPressed: _save, child: const Text('저장하기')),
+          FilledButton(
+            onPressed: _busy ? null : _save,
+            child: _busy
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('저장하기'),
+          ),
         ],
       ),
     );

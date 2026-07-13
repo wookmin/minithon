@@ -11,12 +11,14 @@ class CareRecipient {
   });
 
   factory CareRecipient.fromJson(Map<String, dynamic> json) {
+    // 구버전/부분 문서에도 견디도록 모든 필드에 안전 기본값을 둔다.
+    // (필드 하나가 빠져 throw되면 대상자 목록 전체 로딩이 실패하기 때문)
     return CareRecipient(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      phoneNumber: json['phoneNumber'] as String,
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      phoneNumber: json['phoneNumber'] as String? ?? '',
       relationship: json['relationship'] as String? ?? '어머니',
-      address: json['address'] as String,
+      address: json['address'] as String? ?? '',
       favoriteHospital: json['favoriteHospital'] as String? ?? '',
     );
   }

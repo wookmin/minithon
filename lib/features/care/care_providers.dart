@@ -33,6 +33,8 @@ class CareRecipientsNotifier extends AsyncNotifier<List<CareRecipient>> {
         .get();
     return snapshot.docs
         .map((doc) => CareRecipient.fromJson(doc.data()))
+        // 필수 정보(식별자·이름)가 비어 있는 손상 문서는 목록에서 제외한다.
+        .where((recipient) => recipient.id.isNotEmpty && recipient.name.isNotEmpty)
         .toList();
   }
 
