@@ -1,13 +1,17 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:senior_needs/core/firebase/firebase_providers.dart';
 import 'package:senior_needs/core/notifications/notification_providers.dart';
 import 'package:senior_needs/core/notifications/notification_service.dart';
+import 'package:senior_needs/features/care/care_providers.dart';
 import 'package:senior_needs/features/classification/classification_providers.dart';
 import 'package:senior_needs/features/classification/keyword_need_classifier.dart';
 import 'package:senior_needs/features/classification/need_category.dart';
 import 'package:senior_needs/features/dev_input/dev_input_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 알림 호출만 기록하는 가짜 서비스.
 class FakeNotificationService extends NotificationService {
@@ -29,6 +33,8 @@ class FakeNotificationService extends NotificationService {
 void main() {
   Future<FakeNotificationService> pumpDevInput(WidgetTester tester) async {
     final fake = FakeNotificationService();
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -36,6 +42,9 @@ void main() {
           needClassifierProvider.overrideWithValue(
             const KeywordNeedClassifier(),
           ),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          firebaseFirestoreProvider.overrideWithValue(FakeFirebaseFirestore()),
+          currentUidProvider.overrideWithValue('test-uid'),
         ],
         child: const MaterialApp(home: CallAnalysisScreen()),
       ),

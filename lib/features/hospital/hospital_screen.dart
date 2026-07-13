@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 import '../../core/ui/screen_header.dart';
+import '../../core/ui/skeleton.dart';
 import '../../core/ui/soft_card.dart';
 import '../profile/profile_providers.dart';
 import 'hospital.dart';
@@ -34,14 +36,44 @@ class _HospitalScreenState extends ConsumerState<HospitalScreen> {
   static const _filters = ['전체', '정형외과', '내과', '통증', '재활'];
   String _filter = '전체';
 
+  // 필터 변경 setState로 재조회되지 않도록 주소별로 Future를 캐시한다.
+  Future<List<Hospital>>? _future;
+  String? _futureAddress;
+
+  Future<List<Hospital>> _hospitals(HospitalRepository repo, String address) {
+    if (_future == null || _futureAddress != address) {
+      _futureAddress = address;
+      _future = repo.findNearby(address);
+    }
+    return _future!;
+  }
+
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(parentProfileProvider);
     final repository = ref.watch(hospitalRepositoryProvider);
     final accent = context.colors.health;
 
+    if (profile == null) {
+      return ListView(
+        padding: const EdgeInsets.only(bottom: 28),
+        children: [
+          ScreenHeader(
+            eyebrow: '건강',
+            title: '가까운 병원 찾기',
+            subtitle: '부모님 주소를 기준으로 자주 갈 병원을 확인하세요.',
+            accent: accent,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _RegisterParentPrompt(accent: accent),
+          ),
+        ],
+      );
+    }
+
     return FutureBuilder<List<Hospital>>(
-      future: repository.findNearby(profile.address),
+      future: _hospitals(repository, profile.address),
       builder: (context, snapshot) {
         final all = snapshot.data ?? const <Hospital>[];
         final hospitals = _filter == '전체'
@@ -92,10 +124,11 @@ class _HospitalScreenState extends ConsumerState<HospitalScreen> {
             ),
             const SizedBox(height: 10),
             if (!snapshot.hasData)
-              const Padding(
-                padding: EdgeInsets.only(top: 40),
-                child: Center(child: CircularProgressIndicator()),
-              )
+              for (var i = 0; i < 3; i++)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: _HospitalSkeleton(),
+                )
             else if (hospitals.isEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
@@ -160,6 +193,48 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
+class _RegisterParentPrompt extends StatelessWidget {
+  const _RegisterParentPrompt({required this.accent});
+
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return SoftCard(
+      onTap: () => context.push('/onboarding'),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: c.healthSoft,
+              borderRadius: BorderRadius.circular(AppRadius.surface),
+            ),
+            child: Icon(Icons.person_add_alt_1_rounded, color: accent),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('부모님을 먼저 등록해주세요', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 3),
+                Text(
+                  '주소를 등록하면 주변 병원을 찾아드려요.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: c.textSecondary),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProfileHero extends StatelessWidget {
   const _ProfileHero({
     required this.name,
@@ -169,7 +244,7 @@ class _ProfileHero extends StatelessWidget {
   });
 
   final String name;
-  final int age;
+  final int? age;
   final String address;
   final int count;
 
@@ -201,7 +276,7 @@ class _ProfileHero extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$name 님 · $age세',
+                      age == null ? '$name 님' : '$name 님 · $age세',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 3),
@@ -284,8 +359,10 @@ class _HospitalCard extends StatelessWidget {
                         Flexible(
                           child: Text(hospital.name, style: text.titleMedium),
                         ),
-                        const SizedBox(width: 8),
-                        _OpenBadge(isOpen: hospital.isOpenNow),
+                        if (hospital.hours.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          _OpenBadge(isOpen: hospital.isOpenNow),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -293,17 +370,33 @@ class _HospitalCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.star_rounded, size: 15, color: accent),
-                        const SizedBox(width: 2),
-                        Text(
-                          hospital.rating.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12.5,
+                        if (hospital.rating > 0) ...[
+                          Icon(Icons.star_rounded, size: 15, color: accent),
+                          const SizedBox(width: 2),
+                          Text(
+                            hospital.rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12.5,
+                            ),
                           ),
-                        ),
+                          Text(
+                            ' (${hospital.reviewCount}) · ',
+                            style: TextStyle(
+                              color: c.textSecondary,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ] else ...[
+                          Icon(
+                            Icons.place_outlined,
+                            size: 14,
+                            color: c.textSecondary,
+                          ),
+                          const SizedBox(width: 3),
+                        ],
                         Text(
-                          ' (${hospital.reviewCount}) · ${hospital.distance}',
+                          hospital.distance,
                           style: TextStyle(
                             color: c.textSecondary,
                             fontSize: 12.5,
@@ -316,19 +409,21 @@ class _HospitalCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.schedule_rounded, size: 15, color: c.textSecondary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  hospital.hours,
-                  style: TextStyle(color: c.textSecondary, fontSize: 13),
+          if (hospital.hours.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.schedule_rounded, size: 15, color: c.textSecondary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    hospital.hours,
+                    style: TextStyle(color: c.textSecondary, fontSize: 13),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           const SizedBox(height: 14),
           Row(
             children: [
@@ -345,13 +440,48 @@ class _HospitalCard extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                   ),
-                  onPressed: () => _call(hospital.phone),
+                  onPressed: hospital.phone.isEmpty
+                      ? null
+                      : () => _call(hospital.phone),
                   icon: const Icon(Icons.call_rounded, size: 18),
                   label: const Text('전화'),
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HospitalSkeleton extends StatelessWidget {
+  const _HospitalSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SoftCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Row(
+            children: [
+              Skeleton(width: 54, height: 54, radius: AppRadius.surface),
+              SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Skeleton(width: 140, height: 15, radius: AppRadius.pill),
+                    SizedBox(height: 8),
+                    Skeleton(width: 90, height: 12, radius: AppRadius.pill),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Skeleton(width: double.infinity, height: 44, radius: AppRadius.control),
         ],
       ),
     );

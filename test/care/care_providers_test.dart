@@ -1,5 +1,9 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:senior_needs/core/firebase/firebase_providers.dart';
+import 'package:senior_needs/features/auth/auth_providers.dart';
+import 'package:senior_needs/features/auth/auth_repository.dart';
 import 'package:senior_needs/features/care/care_models.dart';
 import 'package:senior_needs/features/care/care_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,7 +13,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     return ProviderContainer(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        firebaseFirestoreProvider.overrideWithValue(FakeFirebaseFirestore()),
+        currentUidProvider.overrideWithValue('test-uid'),
+        authStateProvider.overrideWith(
+          (ref) => Stream<AppUser?>.value(null),
+        ),
+      ],
     );
   }
 
@@ -18,7 +29,7 @@ void main() {
     addTearDown(container.dispose);
 
     final initial = await container.read(careRecipientsProvider.future);
-    expect(initial.first.name, '김순자');
+    expect(initial, isEmpty);
 
     const recipient = CareRecipient(
       id: 'recipient-2',
@@ -33,6 +44,7 @@ void main() {
 
     final saved = container.read(careRecipientsProvider).asData!.value;
     expect(saved.map((item) => item.name), contains('박영수'));
+    expect(saved.length, 1);
   });
 
   test('자동녹음 등록 완료 상태를 저장한다', () async {
@@ -62,7 +74,7 @@ void main() {
     addTearDown(container.dispose);
 
     final initial = await container.read(myProfileProvider.future);
-    expect(initial.name, '이인욱');
+    expect(initial.name, '사용자');
 
     const profile = MyProfile(name: '홍길동', phoneNumber: '010-3333-4444');
 

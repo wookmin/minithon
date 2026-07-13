@@ -30,6 +30,17 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- 다른 앱에서 오디오 공유 → 똥강아지로 받기 -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="audio/*"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="audio/*"/>
+            </intent-filter>
         </activity>
         <!-- 통화 상태 변화(종료) 감지 → 최근 녹음 분석 알림 -->
         <receiver

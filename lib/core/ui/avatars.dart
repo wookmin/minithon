@@ -34,7 +34,7 @@ class GradientAvatar extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Text(
-        label.characters.first,
+        label.isEmpty ? '?' : label.characters.first,
         style: TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w800,

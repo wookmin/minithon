@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/firebase/firebase_providers.dart';
+import '../../core/notifications/notification_payload.dart';
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
+import '../../core/ui/category_visual.dart';
+import '../../core/ui/skeleton.dart';
 import '../../core/ui/soft_card.dart';
+import '../analysis/analysis_history_providers.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class HomeDashboardScreen extends ConsumerWidget {
   const HomeDashboardScreen({super.key});
@@ -17,14 +23,27 @@ class HomeDashboardScreen extends ConsumerWidget {
     final recording = ref.watch(recordingSetupProvider);
     final schedules = ref.watch(careSchedulesProvider);
 
+    // 로그인 uid가 확정되고, 대상자가 하나도 없으면 세션 최초 1회 온보딩을 띄운다.
+    final uidReady = ref.watch(currentUidProvider) != null;
+    final noRecipient = uidReady && (recipients.asData?.value.isEmpty ?? false);
+    if (noRecipient && !ref.watch(onboardingPromptedProvider)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ref.read(onboardingPromptedProvider.notifier).markPrompted();
+        context.push('/onboarding');
+      });
+    }
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
       children: [
         recipients.when(
-          data: (items) => _CareHero(recipient: items.first, schedules: schedules),
+          data: (items) => items.isEmpty
+              ? _AddParentCard(onTap: () => context.push('/onboarding'))
+              : _CareHero(recipient: items.first, schedules: schedules),
           loading: () => const _LoadingCard(height: 184),
           error: (_, _) =>
-              _CareHero(recipient: defaultCareRecipients.first, schedules: schedules),
+              _AddParentCard(onTap: () => context.push('/onboarding')),
         ),
         const SizedBox(height: 14),
         recording.when(
@@ -49,9 +68,14 @@ class HomeDashboardScreen extends ConsumerWidget {
         const SizedBox(height: 26),
         const _SectionTitle(title: '최근 통화 분석', subtitle: '확인이 필요한 내용만 추렸어요'),
         const SizedBox(height: 12),
-        _DetectedNeedStrip(
-          onHospital: () => context.go('/hospital'),
-          onErrand: () => context.go('/general'),
+        const _DetectedNeedStrip(),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () => context.push('/analysis-history'),
+            child: const Text('전체 기록 보기'),
+          ),
         ),
       ],
     );
@@ -67,62 +91,142 @@ class _CareHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final needsReview =
-        schedules.where((s) => s.status.contains('필요')).length;
+    final c = context.colors;
+    final needsReview = schedules.where((s) => s.status.contains('필요')).length;
+    final nextSchedule = schedules.isEmpty ? null : schedules.first;
     return SoftCard(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: scheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.surface),
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: scheme.primaryContainer,
+                child: Text(
+                  recipient.name.characters.first,
+                  style: TextStyle(
+                    color: scheme.primary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                child: Icon(Icons.pets_rounded, color: scheme.primary),
               ),
-              const Spacer(),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${recipient.name} 님',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${recipient.relationship} · ${recipient.favoriteHospital}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: c.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               if (needsReview > 0)
-                _StatusPill(label: '확인 필요 $needsReview건', color: scheme.primary),
+                _StatusPill(
+                  label: '확인 필요 $needsReview건',
+                  color: scheme.primary,
+                ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 22),
           Text(
-            '${recipient.name} 님\n케어 현황',
+            '오늘의 케어 브리핑',
             style: Theme.of(
               context,
-            ).textTheme.headlineMedium?.copyWith(fontSize: 24, height: 1.25),
+            ).textTheme.headlineMedium?.copyWith(fontSize: 24, height: 1.2),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+          Text(
+            needsReview > 0 ? '확인이 필요한 일정이 있어요.' : '급하게 확인할 내용은 없어요.',
+            style: TextStyle(
+              color: needsReview > 0 ? scheme.primary : c.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (nextSchedule != null)
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(AppRadius.surface),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.event_available_rounded,
+                    color: _scheduleColor(context, nextSchedule.category),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nextSchedule.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${nextSchedule.dateTimeLabel} · ${nextSchedule.location}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: c.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 14),
           Row(
             children: [
-              Icon(
-                Icons.place_outlined,
-                size: 16,
-                color: context.colors.textSecondary,
-              ),
-              const SizedBox(width: 4),
               Expanded(
-                child: Text(
-                  recipient.address,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                child: _SoftMetric(
+                  title: '오늘 일정',
+                  value: '${schedules.length}건',
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _SoftMetric(title: '오늘 일정', value: '${schedules.length}건'),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _SoftMetric(title: '확인 필요', value: '$needsReview건'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Icon(Icons.place_outlined, size: 16, color: c.textSecondary),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  recipient.address,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: c.textSecondary, fontSize: 13),
+                ),
               ),
             ],
           ),
@@ -457,38 +561,60 @@ class _TimelineRow extends StatelessWidget {
   }
 }
 
-class _DetectedNeedStrip extends StatelessWidget {
-  const _DetectedNeedStrip({required this.onHospital, required this.onErrand});
-
-  final VoidCallback onHospital;
-  final VoidCallback onErrand;
+class _DetectedNeedStrip extends ConsumerWidget {
+  const _DetectedNeedStrip();
 
   @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(analysisHistoryProvider);
+    final records = (history.asData?.value ?? const [])
+        .where((record) => record.hasActionableNeed)
+        .take(6)
+        .toList();
+
+    if (records.isEmpty) {
+      return SoftCard(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Row(
+          children: [
+            Icon(
+              Icons.auto_awesome_rounded,
+              color: context.colors.textSecondary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '아직 확인이 필요한 통화가 없어요.\n통화를 분석하면 여기에 모여요.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(height: 1.4),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final now = DateTime.now();
     return SizedBox(
       height: 150,
-      child: ListView(
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        children: [
-          _DetectedNeedCard(
-            title: '허리 통증 언급',
-            subtitle: '병원 확인 필요',
-            icon: Icons.favorite_rounded,
-            color: c.health,
-            soft: c.healthSoft,
-            onTap: onHospital,
-          ),
-          const SizedBox(width: 12),
-          _DetectedNeedCard(
-            title: '전등 교체 요청',
-            subtitle: '지원자 확인 가능',
-            icon: Icons.lightbulb_rounded,
-            color: c.general,
-            soft: c.generalSoft,
-            onTap: onErrand,
-          ),
-        ],
+        itemCount: records.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final record = records[index];
+          final visual = categoryVisual(context, record.primaryCategory);
+          final route = routeForCategory(record.primaryCategory);
+          return _DetectedNeedCard(
+            title: record.reason.isEmpty ? visual.tagline : record.reason,
+            subtitle: '${visual.label} · ${record.relativeTime(now)}',
+            icon: visual.icon,
+            color: visual.color,
+            soft: visual.soft,
+            onTap: route == null ? () {} : () => context.go(route),
+          );
+        },
       ),
     );
   }
@@ -532,12 +658,71 @@ class _DetectedNeedCard extends StatelessWidget {
             const Spacer(),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                height: 1.25,
+              ),
             ),
             const SizedBox(height: 3),
-            Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AddParentCard extends StatelessWidget {
+  const _AddParentCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return SoftCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: scheme.primaryContainer,
+              borderRadius: BorderRadius.circular(AppRadius.surface),
+            ),
+            child: Icon(Icons.person_add_alt_1_rounded, color: scheme.primary),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '부모님을 등록해주세요',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '통화 분석과 병원 검색을 시작할 수 있어요.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: context.colors.textSecondary,
+          ),
+        ],
       ),
     );
   }
@@ -553,7 +738,24 @@ class _LoadingCard extends StatelessWidget {
     return SoftCard(
       child: SizedBox(
         height: height,
-        child: const Center(child: CircularProgressIndicator()),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Skeleton(width: 44, height: 44, radius: AppRadius.surface),
+                SizedBox(width: 12),
+                Skeleton(width: 120, height: 15, radius: AppRadius.pill),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Skeleton(
+              width: double.infinity,
+              height: 13,
+              radius: AppRadius.pill,
+            ),
+          ],
+        ),
       ),
     );
   }

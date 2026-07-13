@@ -66,7 +66,7 @@ class RecordingImportService {
     return [
       for (final recording in recordings)
         matcher.match(
-          filePath: '${recording.relativePath}${recording.name}',
+          filePath: _joinPath(recording.relativePath, recording.name),
           displayName: recording.name,
           contentUri: recording.uri,
           sourceType: RecordingImportSourceType.folderScan,
@@ -74,6 +74,11 @@ class RecordingImportService {
           createdAt: recording.dateAdded,
         ),
     ];
+  }
+
+  String _joinPath(String dir, String name) {
+    if (dir.isEmpty) return name;
+    return dir.endsWith('/') ? '$dir$name' : '$dir/$name';
   }
 
   Future<bool> _requestAudioAccess() async {

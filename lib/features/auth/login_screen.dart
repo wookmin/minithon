@@ -1,160 +1,153 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors_x.dart';
-import '../../core/theme/app_shape.dart';
+import 'auth_providers.dart';
+import 'auth_repository.dart';
+import 'auth_widgets.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await action();
+      // 라우팅은 게이트가, 대상자 미등록 시 온보딩 유도는 홈이 담당한다.
+      if (mounted) context.go(_destinationAfterAuth());
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() => _busy = false);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(authErrorMessage(error))));
+      }
+    }
+  }
+
+  void _loginWithEmail() {
+    final email = _email.text.trim();
+    final password = _password.text;
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('이메일과 비밀번호를 입력해주세요.')));
+      return;
+    }
+    _run(
+      () => ref
+          .read(authRepositoryProvider)
+          .signInWithEmail(email: email, password: password),
+    );
+  }
+
+  String _destinationAfterAuth() {
+    final from = GoRouterState.of(context).uri.queryParameters['from'];
+    if (from == null || from.isEmpty || from == '/login') return '/home';
+    return from;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final c = context.colors;
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: scheme.primary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.pets_rounded,
-                      color: Colors.white,
-                      size: 19,
-                    ),
-                  ),
-                  const SizedBox(width: 9),
-                  Text(
-                    '똥강아지',
-                    style: text.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                    ),
-                  ),
-                ],
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+          children: [
+            const AuthBrandMark(),
+            const SizedBox(height: 28),
+            Text(
+              '다시 오셨네요',
+              style: text.headlineMedium?.copyWith(
+                fontSize: 28,
+                letterSpacing: -0.5,
               ),
-              const Spacer(flex: 3),
-              Text(
-                '멀리 있어도\n똥강아지가 챙길게요',
-                style: text.headlineMedium?.copyWith(
-                  fontSize: 32,
-                  height: 1.2,
-                  letterSpacing: -0.5,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '부모님 곁을 지키러 로그인해요.',
+              style: text.bodyMedium?.copyWith(fontSize: 15),
+            ),
+            const SizedBox(height: 28),
+            TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: '이메일',
+                hintText: 'name@example.com',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _password,
+              obscureText: true,
+              autofillHints: const [AutofillHints.password],
+              onSubmitted: (_) => _loginWithEmail(),
+              decoration: const InputDecoration(labelText: '비밀번호'),
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: _busy ? null : _loginWithEmail,
+              child: _busy
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('로그인'),
+            ),
+            const SizedBox(height: 12),
+            const AuthDivider(),
+            const SizedBox(height: 12),
+            GoogleAuthButton(
+              onPressed: _busy
+                  ? null
+                  : () => _run(
+                      () => ref.read(authRepositoryProvider).signInWithGoogle(),
+                    ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '아직 계정이 없으신가요?',
+                  style: TextStyle(color: c.textSecondary, fontSize: 14),
                 ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                '부모님과의 통화를 살펴,\n도움이 필요한 순간을 대신 알아챕니다.',
-                style: text.bodyMedium?.copyWith(fontSize: 16, height: 1.5),
-              ),
-              const Spacer(flex: 2),
-              _ValueRow(
-                icon: Icons.favorite_rounded,
-                color: c.health,
-                soft: c.healthSoft,
-                title: '건강 신호를 놓치지 않아요',
-                subtitle: '통화 속 아픈 곳·병원 얘기를 감지',
-              ),
-              const SizedBox(height: 18),
-              _ValueRow(
-                icon: Icons.handyman_rounded,
-                color: c.general,
-                soft: c.generalSoft,
-                title: '생활 도움을 연결해요',
-                subtitle: '장보기·수리·이동을 이웃과 이어줘요',
-              ),
-              const SizedBox(height: 18),
-              _ValueRow(
-                icon: Icons.diversity_1_rounded,
-                color: c.professional,
-                soft: c.professionalSoft,
-                title: '전문가를 바로 찾아드려요',
-                subtitle: '요양보호사·사회복지사 매칭',
-              ),
-              const Spacer(flex: 3),
-              FilledButton(
-                onPressed: () => context.go('/home'),
-                child: const Text('시작하기'),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                '가입 없이 체험 계정으로 바로 시작해요',
-                textAlign: TextAlign.center,
-                style: text.bodyMedium?.copyWith(
-                  fontSize: 13,
-                  color: c.textSecondary,
+                TextButton(
+                  onPressed: _busy ? null : () => context.push('/signup'),
+                  child: const Text('회원가입'),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
-    );
-  }
-}
-
-class _ValueRow extends StatelessWidget {
-  const _ValueRow({
-    required this.icon,
-    required this.color,
-    required this.soft,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final Color color;
-  final Color soft;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Row(
-      children: [
-        Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: soft,
-            borderRadius: BorderRadius.circular(AppRadius.surface),
-          ),
-          child: Icon(icon, color: color, size: 23),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15.5,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(fontSize: 13.5, color: c.textSecondary),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

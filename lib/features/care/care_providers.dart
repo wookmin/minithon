@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/firebase/firebase_providers.dart';
+import '../auth/auth_providers.dart';
 import 'care_models.dart';
 
-const _recipientsKey = 'careRecipients';
 const _recordingSetupKey = 'recordingSetupState';
 const _myProfileKey = 'myProfile';
 
@@ -21,34 +22,29 @@ final careRecipientsProvider =
 class CareRecipientsNotifier extends AsyncNotifier<List<CareRecipient>> {
   @override
   Future<List<CareRecipient>> build() async {
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final source = prefs.getString(_recipientsKey);
-    if (source == null || source.isEmpty) return defaultCareRecipients;
-    try {
-      final recipients = decodeRecipients(source);
-      return recipients.isEmpty ? defaultCareRecipients : recipients;
-    } on Object {
-      return defaultCareRecipients;
-    }
+    final uid = ref.watch(currentUidProvider);
+    if (uid == null) return const [];
+    final snapshot = await ref
+        .watch(firebaseFirestoreProvider)
+        .collection('users')
+        .doc(uid)
+        .collection('recipients')
+        .get();
+    return snapshot.docs.map((doc) => CareRecipient.fromJson(doc.data())).toList();
   }
 
   Future<void> save(CareRecipient recipient) async {
-    final current = <CareRecipient>[
-      ...(state.asData?.value ?? defaultCareRecipients),
-    ];
-    final index = current.indexWhere((item) => item.id == recipient.id);
-    if (index >= 0) {
-      current[index] = recipient;
-    } else {
-      current.add(recipient);
-    }
-    await _persist(current);
-  }
-
-  Future<void> _persist(List<CareRecipient> recipients) async {
-    state = AsyncData(recipients);
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setString(_recipientsKey, encodeRecipients(recipients));
+    final uid = ref.read(currentUidProvider);
+    if (uid == null) return;
+    await ref
+        .read(firebaseFirestoreProvider)
+        .collection('users')
+        .doc(uid)
+        .collection('recipients')
+        .doc(recipient.id)
+        .set(recipient.toJson());
+    ref.invalidateSelf();
+    await future;
   }
 }
 
@@ -61,16 +57,23 @@ class MyProfileNotifier extends AsyncNotifier<MyProfile> {
   Future<MyProfile> build() async {
     final prefs = ref.watch(sharedPreferencesProvider);
     final source = prefs.getString(_myProfileKey);
-    if (source == null || source.isEmpty) return defaultMyProfile;
-    try {
-      final decoded = jsonDecode(source);
-      if (decoded is Map<String, dynamic>) {
-        return MyProfile.fromJson(decoded);
+    if (source != null && source.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(source);
+        if (decoded is Map<String, dynamic>) {
+          return MyProfile.fromJson(decoded);
+        }
+      } on Object {
+        // 저장 형식이 깨졌으면 아래 로그인 사용자 정보로 폴백.
       }
-    } on Object {
-      // Fall through to the default profile.
     }
-    return defaultMyProfile;
+    // 저장된 프로필이 없으면 로그인한 사용자 정보에서 이름을 가져온다.
+    final user = ref.watch(authStateProvider).asData?.value;
+    final displayName = user?.displayName?.trim();
+    final name = (displayName != null && displayName.isNotEmpty)
+        ? displayName
+        : (user?.email?.split('@').first ?? '사용자');
+    return MyProfile(name: name, phoneNumber: '');
   }
 
   Future<void> save(MyProfile profile) async {

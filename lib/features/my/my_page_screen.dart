@@ -5,6 +5,7 @@ import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 import '../../core/ui/screen_header.dart';
 import '../../core/ui/soft_card.dart';
+import '../auth/auth_providers.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
 
@@ -128,8 +129,22 @@ class MyPageScreen extends ConsumerWidget {
             child: Text('대상자 정보를 불러오지 못했습니다.'),
           ),
         ),
+        const SizedBox(height: 28),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: OutlinedButton.icon(
+            onPressed: () => _logout(context, ref),
+            icon: const Icon(Icons.logout_rounded, size: 20),
+            label: const Text('로그아웃'),
+          ),
+        ),
       ],
     );
+  }
+
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    await ref.read(authRepositoryProvider).signOut();
+    // 게이트(authState 구독)가 로그아웃을 감지해 자동으로 로그인 화면으로 보낸다.
   }
 
   void _showRecipientSheet(

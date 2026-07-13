@@ -4,11 +4,11 @@
 class ParentProfile {
   final String name;
   final String address;
-  final int age;
+  final int? age;
 
   const ParentProfile({
     required this.name,
     required this.address,
-    required this.age,
+    this.age,
   });
 }

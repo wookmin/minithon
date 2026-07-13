@@ -11,21 +11,31 @@ import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 import '../../core/ui/category_visual.dart';
 import '../../core/ui/soft_card.dart';
+import '../analysis/analysis_history_providers.dart';
+import '../analysis/analysis_record.dart';
 import '../classification/classification_providers.dart';
 import '../classification/need_category.dart';
 import '../classification/need_classification_result.dart';
 import '../recording/audio_transcription_providers.dart';
 import '../recording/recording_repository.dart';
+import '../recording/shared_audio_providers.dart';
 import '../stt/stt_providers.dart';
 
 /// 통화 분석 화면. 텍스트·음성·녹음 파일을 니즈 분류에 태운다.
 ///
 /// 텍스트 입력 → 분류 → 니즈가 있으면 알림 표시. 알림 탭 시 해당 탭으로 이동.
 class CallAnalysisScreen extends ConsumerStatefulWidget {
-  const CallAnalysisScreen({super.key, this.autoAnalyzeLatest = false});
+  const CallAnalysisScreen({
+    super.key,
+    this.autoAnalyzeLatest = false,
+    this.analyzeSharedAudio = false,
+  });
 
   /// 통화 종료 알림을 탭해 진입한 경우 true — 최근 녹음을 자동 분석한다.
   final bool autoAnalyzeLatest;
+
+  /// 공유 시트로 오디오가 들어와 진입한 경우 true — 공유된 파일을 자동 분석한다.
+  final bool analyzeSharedAudio;
 
   @override
   ConsumerState<CallAnalysisScreen> createState() => _CallAnalysisScreenState();
@@ -45,7 +55,33 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _analyzeLatestRecording(),
       );
+    } else if (widget.analyzeSharedAudio) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _analyzeSharedAudio(),
+      );
     }
+  }
+
+  Future<void> _analyzeSharedAudio() async {
+    if (_isAnalyzing || _isTranscribing) return;
+
+    final path = ref.read(sharedAudioPathProvider);
+    ref.read(sharedAudioPathProvider.notifier).set(null); // 소비
+    if (path == null || path.isEmpty) return;
+
+    setState(() => _isTranscribing = true);
+    final Uint8List bytes;
+    try {
+      bytes = await File(path).readAsBytes();
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _isTranscribing = false);
+      _showMessage('공유된 파일을 읽지 못했어요: $error');
+      return;
+    }
+    if (!mounted) return;
+
+    await _transcribeAndAnalyze(bytes, _mimeForExtension(path.split('.').last));
   }
 
   @override
@@ -179,8 +215,11 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
     if (_isAnalyzing) return;
 
     setState(() => _isAnalyzing = true);
+    final input = _controller.text.trim();
     final classifier = ref.read(needClassifierProvider);
-    final result = await classifier.classify(_controller.text);
+    final result = await classifier.classify(input);
+
+    await _saveHistory(input, result);
 
     if (result.hasActionableNeed) {
       await ref
@@ -200,6 +239,21 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _saveHistory(String input, NeedClassificationResult result) {
+    final snippet = input.length > 60 ? '${input.substring(0, 60)}…' : input;
+    return ref
+        .read(analysisHistoryProvider.notifier)
+        .add(
+          AnalysisRecord(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            createdAt: DateTime.now(),
+            categories: result.categories,
+            reason: result.reason,
+            snippet: snippet,
+          ),
+        );
   }
 
   Future<void> _toggleListening() async {
