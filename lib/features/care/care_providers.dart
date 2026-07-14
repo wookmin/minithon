@@ -34,7 +34,9 @@ class CareRecipientsNotifier extends AsyncNotifier<List<CareRecipient>> {
     return snapshot.docs
         .map((doc) => CareRecipient.fromJson(doc.data()))
         // 필수 정보(식별자·이름)가 비어 있는 손상 문서는 목록에서 제외한다.
-        .where((recipient) => recipient.id.isNotEmpty && recipient.name.isNotEmpty)
+        .where(
+          (recipient) => recipient.id.isNotEmpty && recipient.name.isNotEmpty,
+        )
         .toList();
   }
 
@@ -146,16 +148,40 @@ class RecordingSetupNotifier extends AsyncNotifier<RecordingSetupState> {
 
 final careSchedulesProvider = Provider<List<CareSchedule>>((ref) => const []);
 
-final errandRequestsProvider = FutureProvider<List<ErrandRequest>>((ref) async {
-  final snapshot = await ref
-      .watch(firebaseFirestoreProvider)
-      .collection(FirestorePaths.errands)
-      .get();
-  return snapshot.docs
-      .map((doc) => ErrandRequest.fromJson(doc.data()))
-      .where((request) => request.title.isNotEmpty)
-      .toList();
-});
+final errandRequestsProvider =
+    AsyncNotifierProvider<ErrandRequestsNotifier, List<ErrandRequest>>(
+      ErrandRequestsNotifier.new,
+    );
+
+class ErrandRequestsNotifier extends AsyncNotifier<List<ErrandRequest>> {
+  @override
+  Future<List<ErrandRequest>> build() async {
+    final snapshot = await ref
+        .watch(firebaseFirestoreProvider)
+        .collection(FirestorePaths.errands)
+        .get();
+    final requests = snapshot.docs
+        .map((doc) => ErrandRequest.fromJson(doc.data()))
+        .where((request) => request.title.isNotEmpty)
+        .toList();
+    requests.sort((a, b) {
+      final left = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final right = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return right.compareTo(left);
+    });
+    return requests;
+  }
+
+  Future<void> add(ErrandRequest request) async {
+    await ref
+        .read(firebaseFirestoreProvider)
+        .collection(FirestorePaths.errands)
+        .doc(request.id)
+        .set(request.toJson());
+    ref.invalidateSelf();
+    await future;
+  }
+}
 
 final careExpertsProvider = FutureProvider<List<CareExpert>>((ref) async {
   final snapshot = await ref

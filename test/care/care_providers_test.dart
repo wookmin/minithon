@@ -17,9 +17,7 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
         firebaseFirestoreProvider.overrideWithValue(FakeFirebaseFirestore()),
         currentUidProvider.overrideWithValue('test-uid'),
-        authStateProvider.overrideWith(
-          (ref) => Stream<AppUser?>.value(null),
-        ),
+        authStateProvider.overrideWith((ref) => Stream<AppUser?>.value(null)),
       ],
     );
   }
@@ -122,6 +120,67 @@ void main() {
 
     final disabled = container.read(recordingSetupProvider).asData!.value;
     expect(disabled.backgroundDetectionEnabled, isFalse);
+  });
+
+  test('심부름 요청을 Firestore에 저장하고 최신순으로 로드한다', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final firestore = FakeFirebaseFirestore();
+    final now = DateTime(2026, 7, 14, 12);
+
+    final oldRequest = ErrandRequest(
+      id: 'old-request',
+      title: '장보기 도움',
+      category: '장보기',
+      region: '마포구 공덕동',
+      distance: '1.2km',
+      description: '저녁 장보기가 필요해요.',
+      status: '모집중',
+      helperCount: 1,
+      createdAt: now.subtract(const Duration(hours: 2)),
+    );
+    await firestore
+        .collection('errands')
+        .doc(oldRequest.id)
+        .set(oldRequest.toJson());
+
+    final container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        firebaseFirestoreProvider.overrideWithValue(firestore),
+        currentUidProvider.overrideWithValue('test-uid'),
+        authStateProvider.overrideWith((ref) => Stream<AppUser?>.value(null)),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final initial = await container.read(errandRequestsProvider.future);
+    expect(initial.single.id, 'old-request');
+
+    final newRequest = ErrandRequest(
+      id: 'new-request',
+      title: '전등 교체가 필요해요',
+      category: '수리',
+      region: '마포구 아현동',
+      distance: '내 주변',
+      description: '거실 전등이 나갔어요.',
+      status: '모집중',
+      helperCount: 0,
+      requesterUid: 'test-uid',
+      requesterName: '홍길동',
+      createdAt: now,
+    );
+
+    await container.read(errandRequestsProvider.notifier).add(newRequest);
+
+    final savedDoc = await firestore
+        .collection('errands')
+        .doc('new-request')
+        .get();
+    expect(savedDoc.data()?['title'], '전등 교체가 필요해요');
+
+    final loaded = container.read(errandRequestsProvider).asData!.value;
+    expect(loaded.map((request) => request.id), ['new-request', 'old-request']);
   });
 
   test('내 정보를 로컬 저장 provider에 저장한다', () async {

@@ -52,7 +52,15 @@ class FunctionsHospitalRepository implements HospitalRepository {
       address: (road != null && road.isNotEmpty ? road : jibun) ?? '',
       distance: _formatDistance(meters),
       phone: doc['phone'] as String? ?? '',
+      latitude: _doubleValue(doc['y']),
+      longitude: _doubleValue(doc['x']),
     );
+  }
+
+  double? _doubleValue(Object? value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   /// "의료,건강 > 병원 > 내과" → "내과"
@@ -74,5 +82,6 @@ class FunctionsHospitalRepository implements HospitalRepository {
 }
 
 final hospitalRepositoryProvider = Provider<HospitalRepository>(
-  (ref) => FunctionsHospitalRepository(invoke: ref.watch(callableInvokerProvider)),
+  (ref) =>
+      FunctionsHospitalRepository(invoke: ref.watch(callableInvokerProvider)),
 );

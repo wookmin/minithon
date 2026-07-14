@@ -9,6 +9,8 @@ class Hospital {
   final String phone;
   final double rating;
   final int reviewCount;
+  final double? latitude;
+  final double? longitude;
 
   const Hospital({
     required this.name,
@@ -20,5 +22,9 @@ class Hospital {
     this.phone = '',
     this.rating = 0,
     this.reviewCount = 0,
+    this.latitude,
+    this.longitude,
   });
+
+  bool get hasLocation => latitude != null && longitude != null;
 }

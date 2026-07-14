@@ -78,6 +78,7 @@ class CareSchedule {
 
 class ErrandRequest {
   const ErrandRequest({
+    this.id = '',
     required this.title,
     required this.category,
     required this.region,
@@ -85,10 +86,14 @@ class ErrandRequest {
     required this.description,
     required this.status,
     required this.helperCount,
+    this.requesterUid = '',
+    this.requesterName = '',
+    this.createdAt,
   });
 
   factory ErrandRequest.fromJson(Map<String, dynamic> json) {
     return ErrandRequest(
+      id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
       category: json['category'] as String? ?? '',
       region: json['region'] as String? ?? '',
@@ -98,9 +103,13 @@ class ErrandRequest {
       helperCount: json['helperCount'] is int
           ? json['helperCount'] as int
           : int.tryParse('${json['helperCount']}') ?? 0,
+      requesterUid: json['requesterUid'] as String? ?? '',
+      requesterName: json['requesterName'] as String? ?? '',
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
     );
   }
 
+  final String id;
   final String title;
   final String category;
   final String region;
@@ -108,9 +117,13 @@ class ErrandRequest {
   final String description;
   final String status;
   final int helperCount;
+  final String requesterUid;
+  final String requesterName;
+  final DateTime? createdAt;
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'title': title,
       'category': category,
       'region': region,
@@ -118,6 +131,9 @@ class ErrandRequest {
       'description': description,
       'status': status,
       'helperCount': helperCount,
+      'requesterUid': requesterUid,
+      'requesterName': requesterName,
+      'createdAt': createdAt?.toIso8601String(),
     };
   }
 }

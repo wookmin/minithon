@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
+import '../../core/ui/action_sheet.dart';
 import '../../core/ui/screen_header.dart';
 import '../../core/ui/skeleton.dart';
 import '../../core/ui/soft_card.dart';
@@ -12,17 +13,30 @@ import '../profile/profile_providers.dart';
 import 'hospital.dart';
 import 'hospital_repository.dart';
 
-Future<void> _call(String phone) async {
+Future<void> _call(BuildContext context, String phone) async {
+  final confirmed = await showActionConfirmSheet(
+    context,
+    title: phone,
+    message: '이 번호로 전화를 연결할까요?',
+    icon: Icons.call_rounded,
+    confirmLabel: '전화 걸기',
+  );
+  if (!confirmed || !context.mounted) return;
   final uri = Uri(scheme: 'tel', path: phone.replaceAll('-', ''));
-  await launchUrl(uri);
+  final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (!opened && context.mounted) {
+    _showLaunchError(context, '전화 앱을 열지 못했어요.');
+  }
 }
 
-Future<void> _openMap(Hospital hospital) async {
-  final query = Uri.encodeComponent('${hospital.name} ${hospital.address}');
-  await launchUrl(
-    Uri.parse('https://maps.google.com/?q=$query'),
-    mode: LaunchMode.externalApplication,
-  );
+void _openMap(BuildContext context, Hospital hospital) {
+  context.push('/hospital-map', extra: hospital);
+}
+
+void _showLaunchError(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(message)));
 }
 
 class HospitalScreen extends ConsumerStatefulWidget {
@@ -219,7 +233,10 @@ class _RegisterParentPrompt extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('부모님을 먼저 등록해주세요', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  '부모님을 먼저 등록해주세요',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 3),
                 Text(
                   '주소를 등록하면 주변 병원을 찾아드려요.',
@@ -429,7 +446,7 @@ class _HospitalCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _openMap(hospital),
+                  onPressed: () => _openMap(context, hospital),
                   icon: const Icon(Icons.place_outlined, size: 18),
                   label: const Text('길찾기'),
                 ),
@@ -442,7 +459,7 @@ class _HospitalCard extends StatelessWidget {
                   ),
                   onPressed: hospital.phone.isEmpty
                       ? null
-                      : () => _call(hospital.phone),
+                      : () => _call(context, hospital.phone),
                   icon: const Icon(Icons.call_rounded, size: 18),
                   label: const Text('전화'),
                 ),
@@ -481,7 +498,11 @@ class _HospitalSkeleton extends StatelessWidget {
             ],
           ),
           SizedBox(height: 16),
-          Skeleton(width: double.infinity, height: 44, radius: AppRadius.control),
+          Skeleton(
+            width: double.infinity,
+            height: 44,
+            radius: AppRadius.control,
+          ),
         ],
       ),
     );
