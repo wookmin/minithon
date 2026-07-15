@@ -94,7 +94,117 @@ class HomeDashboardScreen extends ConsumerWidget {
             child: const Text('전체 기록 보기'),
           ),
         ),
+        const SizedBox(height: 22),
+        const _SectionTitle(
+          title: '내가 올린 도움 요청',
+          subtitle: '부모님 지역에 올라간 요청과 지원 현황이에요',
+        ),
+        const SizedBox(height: 12),
+        const _MyPostedStrip(),
       ],
+    );
+  }
+}
+
+/// 내가 올린(부모님 지역) 도움 요청과 지원 현황 미리보기.
+class _MyPostedStrip extends ConsumerWidget {
+  const _MyPostedStrip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final posted = ref.watch(myPostedErrandsProvider);
+    return posted.when(
+      data: (items) => items.isEmpty
+          ? const _EmptyPostedCard()
+          : Column(
+              children: [
+                for (final errand in items.take(3))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _PostedCard(errand: errand),
+                  ),
+              ],
+            ),
+      loading: () => const _LoadingCard(height: 84),
+      error: (_, _) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _PostedCard extends StatelessWidget {
+  const _PostedCard({required this.errand});
+
+  final ErrandRequest errand;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final text = Theme.of(context).textTheme;
+    return SoftCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  errand.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              _StatusPill(
+                label: '지원 ${errand.helperCount}명',
+                color: errand.helperCount > 0 ? c.general : c.textSecondary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.place_outlined, size: 15, color: c.textSecondary),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  '${errand.category} · ${errand.region}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.bodySmall?.copyWith(color: c.textSecondary),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyPostedCard extends StatelessWidget {
+  const _EmptyPostedCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return SoftCard(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Row(
+        children: [
+          Icon(Icons.campaign_outlined, color: c.textSecondary, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '아직 올린 요청이 없어요. 부모님과 통화가 분석되면 필요한 도움이 자동으로 올라와요.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: c.textSecondary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
