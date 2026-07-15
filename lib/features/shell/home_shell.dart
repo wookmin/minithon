@@ -231,12 +231,6 @@ class _QuickActionSheet extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           _QuickActionTile(
-            icon: Icons.graphic_eq_rounded,
-            title: '녹음 파일 분석',
-            subtitle: '통화 녹음을 STT와 Gemini로 확인',
-            onTap: () => onSelected('/call-analysis'),
-          ),
-          _QuickActionTile(
             icon: Icons.settings_voice_rounded,
             title: '녹음 연결 설정',
             subtitle: '자동녹음·파일 선택·폴더 스캔 관리',

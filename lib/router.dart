@@ -8,12 +8,10 @@ import 'features/auth/auth_repository.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/signup_screen.dart';
 import 'features/auth/splash_screen.dart';
-import 'features/dev_input/dev_input_screen.dart';
 import 'features/general/general_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/home/home_dashboard_screen.dart';
 import 'features/my/my_page_screen.dart';
-import 'features/recording/recording_diagnostic_screen.dart';
 import 'features/recording/recording_setup_screen.dart';
 import 'features/shell/home_shell.dart';
 
@@ -110,22 +108,9 @@ GoRouter createRouter({
         builder: (context, state) => const RecordingSetupScreen(),
       ),
       GoRoute(
-        path: '/call-analysis',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => CallAnalysisScreen(
-          autoAnalyzeLatest: state.uri.queryParameters['auto'] == '1',
-          analyzeSharedAudio: state.uri.queryParameters['shared'] == '1',
-        ),
-      ),
-      GoRoute(
         path: '/analysis-history',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const AnalysisHistoryScreen(),
-      ),
-      GoRoute(
-        path: '/recording-diagnostic',
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const RecordingDiagnosticScreen(),
       ),
     ],
   );
