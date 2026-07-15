@@ -84,7 +84,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              '똥강아지 시작하기',
+              '해됴 시작하기',
               style: text.headlineMedium?.copyWith(
                 fontSize: 26,
                 letterSpacing: -0.5,

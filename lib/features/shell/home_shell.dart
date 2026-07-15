@@ -120,7 +120,7 @@ class _ProductHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '똥강아지',
+                      '해됴',
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 18,

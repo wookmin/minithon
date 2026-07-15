@@ -9,7 +9,7 @@
     <!-- 백그라운드에서 통화 종료 감지 리시버가 절전으로 죽지 않도록 -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <application
-        android:label="똥강아지"
+        android:label="해됴"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -33,7 +33,7 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- 다른 앱에서 오디오 공유 → 똥강아지로 받기 -->
+            <!-- 다른 앱에서 오디오 공유 → 해됴로 받기 -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>

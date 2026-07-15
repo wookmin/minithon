@@ -15,7 +15,7 @@ class AuthBrandMark extends StatelessWidget {
         const BrandLogo(size: 40),
         const SizedBox(width: 10),
         Text(
-          '똥강아지',
+          '해됴',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w800,
             fontSize: 20,
