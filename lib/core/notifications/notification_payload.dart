@@ -20,17 +20,17 @@ String? routeForCategory(NeedCategory category) {
     case NeedCategory.hospital:
       return (
         title: '건강 관련 도움이 필요해요',
-        body: '통화에서 병원 관련 도움이 감지됐어요. 해됴에서 업체를 확인하세요.',
+        body: '통화에서 병원 관련 도움이 감지됐어요. 해주세요에서 업체를 확인하세요.',
       );
     case NeedCategory.general:
       return (
         title: '생활 도움이 필요해요',
-        body: '통화에서 생활 도움이 감지됐어요. 해됴에서 업체를 확인하세요.',
+        body: '통화에서 생활 도움이 감지됐어요. 해주세요에서 업체를 확인하세요.',
       );
     case NeedCategory.professional:
       return (
         title: '전문 돌봄이 필요해요',
-        body: '통화에서 전문 돌봄이 감지됐어요. 해됴에서 업체를 확인하세요.',
+        body: '통화에서 전문 돌봄이 감지됐어요. 해주세요에서 업체를 확인하세요.',
       );
     case NeedCategory.none:
       return null;

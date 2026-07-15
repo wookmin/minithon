@@ -8,7 +8,7 @@ import 'analysis_record.dart';
 /// recording_setup(매칭 녹음)·백그라운드 분석이 공통으로 사용한다.
 /// 의존성을 프로바이더가 아닌 값으로 받아, UI(WidgetRef) 없는 헤드리스 isolate에서도 재사용된다.
 ///
-/// 니즈에 맞는 지역 업체 매칭은 저장하지 않고, 해됴/홈 화면이 이 기록과
+/// 니즈에 맞는 지역 업체 매칭은 저장하지 않고, 해주세요/홈 화면이 이 기록과
 /// 부모님 지역을 바탕으로 실시간으로 추천한다.
 Future<NeedClassificationResult> runNeedAnalysis({
   required NeedClassifier classifier,

@@ -13,7 +13,7 @@ final localBusinessesProvider = Provider<List<LocalBusiness>>(
 /// 더미일 때는 실제 전화 연결 대신 데모 안내만 한다(오연결·오해 방지).
 final businessesAreDemoProvider = Provider<bool>((ref) => true);
 
-/// 해됴 화면의 선택 카테고리. 홈 추천 카드가 이 값을 바꿔 딥링크처럼 동작한다.
+/// 해주세요 화면의 선택 카테고리. 홈 추천 카드가 이 값을 바꿔 딥링크처럼 동작한다.
 final selectedBusinessCategoryProvider =
     NotifierProvider<SelectedBusinessCategoryNotifier, String>(
       SelectedBusinessCategoryNotifier.new,
