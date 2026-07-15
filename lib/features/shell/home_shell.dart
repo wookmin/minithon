@@ -33,7 +33,7 @@ class HomeShell extends StatelessWidget {
           NavigationDestination(
             icon: Icon(Icons.handyman_outlined),
             selectedIcon: Icon(Icons.handyman_rounded),
-            label: '해주세요',
+            label: '해됴',
           ),
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
@@ -85,7 +85,7 @@ class _ProductHeader extends StatelessWidget {
   String get _sectionLabel {
     switch (currentIndex) {
       case 0:
-        return '해주세요';
+        return '해됴';
       case 1:
         return '홈';
       case 2:

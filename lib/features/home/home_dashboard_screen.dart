@@ -200,7 +200,7 @@ class _RecoCard extends ConsumerWidget {
             )
           else
             Text(
-              '맞는 업체를 찾고 있어요. 해주세요에서 직접 둘러볼 수 있어요.',
+              '맞는 업체를 찾고 있어요. 해됴에서 직접 둘러볼 수 있어요.',
               style: text.bodySmall?.copyWith(color: c.textSecondary),
             ),
         ],

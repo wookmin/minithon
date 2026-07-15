@@ -12,7 +12,7 @@ import '../business/local_business.dart';
 import '../care/care_providers.dart';
 import '../care/region_matcher.dart';
 
-/// 해주세요 — 검색이 어려운 부모님을 대신해 지역 전문 업체를 연결한다.
+/// 해됴 — 검색이 어려운 부모님을 대신해 지역 전문 업체를 연결한다.
 class GeneralScreen extends ConsumerStatefulWidget {
   const GeneralScreen({super.key});
 
@@ -51,7 +51,7 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
       children: [
         ScreenHeader(
           eyebrow: parentRegion.isEmpty ? '지역 상권' : parentRegion,
-          title: '해주세요',
+          title: '해됴',
           subtitle: parentRegion.isEmpty
               ? '마이에서 부모님 지역을 등록하면 그 동네 전문 업체를 연결해드려요.'
               : '$parentRegion 전문 업체를 연결해드려요. 검색은 저희가 대신할게요.',
