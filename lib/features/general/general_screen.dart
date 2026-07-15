@@ -24,6 +24,7 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
   static const _filters = ['전체', '수리', '청소', '장보기', '병원 동행', '간병'];
   String _filter = '전체';
   int _recipientIndex = 0;
+  bool _showOtherRegions = false;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +43,7 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
       all: all,
       region: parentAddress,
       category: _filter == '전체' ? null : _filter,
+      allowOtherRegions: _showOtherRegions,
     );
 
     return ListView(
@@ -90,12 +92,25 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        if (businesses.isEmpty)
-          const _EmptyState(
-            title: '연결할 업체가 없어요',
-            message: '다른 카테고리를 선택하거나 잠시 후 다시 시도해주세요.',
-          )
-        else ...[
+        if (businesses.isEmpty) ...[
+          _EmptyState(
+            title: parentRegion.isEmpty
+                ? '연결할 업체가 없어요'
+                : '$parentRegion에 등록된 업체가 없어요',
+            message: parentRegion.isEmpty
+                ? '마이에서 부모님 지역을 등록하면 그 지역 업체를 보여드려요.'
+                : '아직 이 지역에 입점한 업체가 없어요.',
+          ),
+          if (parentRegion.isNotEmpty && !_showOtherRegions)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: OutlinedButton.icon(
+                onPressed: () => setState(() => _showOtherRegions = true),
+                icon: const Icon(Icons.travel_explore_rounded, size: 18),
+                label: const Text('다른 지역 업체도 보기'),
+              ),
+            ),
+        ] else ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 6, 20, 2),
             child: Text(

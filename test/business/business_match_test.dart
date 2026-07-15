@@ -75,11 +75,21 @@ void main() {
     expect(result.map((b) => b.id), ['1', '2']);
   });
 
-  test('지역에 입점 업체가 없으면 카테고리 전체로 폴백한다', () {
+  test('지역이 등록됐는데 매칭 업체가 없으면 기본은 빈 목록이다', () {
     final result = matchBusinesses(
       all: _all,
       region: '부산 해운대구',
       category: '수리',
+    );
+    expect(result, isEmpty);
+  });
+
+  test('allowOtherRegions면 타 지역까지 확대한다', () {
+    final result = matchBusinesses(
+      all: _all,
+      region: '부산 해운대구',
+      category: '수리',
+      allowOtherRegions: true,
     );
     expect(result.map((b) => b.id), ['1', '3']);
   });

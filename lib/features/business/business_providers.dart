@@ -39,12 +39,15 @@ String? businessCategoryForNeed(NeedCategory category, {String serviceType = ''}
 }
 
 /// 지역·카테고리로 업체를 추린다.
-/// 같은 지역(시/군/구) 업체를 우선하고, 지역 매칭이 하나도 없으면
-/// (부모 지역 미등록·미입점) 카테고리만 맞는 전체를 폴백으로 보여준다.
+/// 같은 지역(시/군/구) 업체만 보여주는 것이 기본이다. 지역이 등록됐는데
+/// 입점 업체가 없으면 빈 목록을 반환한다(타 지역을 부모 지역인 척 노출하지 않도록).
+/// 지역 미등록이면 브라우징 목적으로 전체를 보여주고, [allowOtherRegions]를 켜면
+/// 사용자가 명시적으로 인근·전국 확대를 선택한 것으로 보고 카테고리 전체를 반환한다.
 List<LocalBusiness> matchBusinesses({
   required List<LocalBusiness> all,
   required String region,
   String? category,
+  bool allowOtherRegions = false,
 }) {
   var pool = all;
   if (category != null && category.isNotEmpty) {
@@ -54,7 +57,8 @@ List<LocalBusiness> matchBusinesses({
   final sameRegionPool = pool
       .where((business) => sameRegion(business.region, region))
       .toList();
-  return sameRegionPool.isNotEmpty ? sameRegionPool : pool;
+  if (sameRegionPool.isNotEmpty) return sameRegionPool;
+  return allowOtherRegions ? pool : const [];
 }
 
 /// 데모용 입점 업체(로컬 상수). 지역 × 카테고리로 다양하게 구성.
