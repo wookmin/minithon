@@ -66,8 +66,8 @@ class HomeDashboardScreen extends ConsumerWidget {
           ),
         ),
         const _SectionTitle(
-          title: '내가 올린 도움 요청',
-          subtitle: '부모님 지역에 올라간 요청과 지원 현황이에요',
+          title: '앞으로의 일정',
+          subtitle: '부모님께 필요한 도움을 날짜순으로 정리했어요',
         ),
         const SizedBox(height: 12),
         const _MyPostedStrip(),
@@ -76,19 +76,19 @@ class HomeDashboardScreen extends ConsumerWidget {
   }
 }
 
-/// 내가 올린(부모님 지역) 도움 요청과 지원 현황 미리보기.
+/// 앞으로의 일정 — 날짜가 정해진 내 부탁해요를 날짜순으로 미리보기.
 class _MyPostedStrip extends ConsumerWidget {
   const _MyPostedStrip();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final posted = ref.watch(myPostedErrandsProvider);
-    return posted.when(
+    final upcoming = ref.watch(upcomingErrandsProvider);
+    return upcoming.when(
       data: (items) => items.isEmpty
           ? const _EmptyPostedCard()
           : Column(
               children: [
-                for (final errand in items.take(3))
+                for (final errand in items.take(4))
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: _PostedCard(errand: errand),
@@ -110,29 +110,39 @@ class _PostedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final text = Theme.of(context).textTheme;
+    final date = errand.preferredDate;
     return SoftCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  errand.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: text.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+              if (date != null) ...[
+                Icon(Icons.event_rounded, size: 16, color: c.general),
+                const SizedBox(width: 5),
+                Text(
+                  '${date.month}월 ${date.day}일',
+                  style: text.bodyMedium?.copyWith(
+                    color: c.general,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
+              ],
+              const Spacer(),
               _StatusPill(
                 label: '지원 ${errand.helperCount}명',
                 color: errand.helperCount > 0 ? c.general : c.textSecondary,
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
+          Text(
+            errand.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
           Row(
             children: [
               Icon(Icons.place_outlined, size: 15, color: c.textSecondary),
@@ -163,11 +173,11 @@ class _EmptyPostedCard extends StatelessWidget {
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
-          Icon(Icons.campaign_outlined, color: c.textSecondary, size: 22),
+          Icon(Icons.event_available_outlined, color: c.textSecondary, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '아직 올린 요청이 없어요. 부모님과 통화가 분석되면 필요한 도움이 자동으로 올라와요.',
+              '예정된 일정이 없어요. 심부름 > 부탁해요에서 날짜를 정하면 여기에 표시돼요.',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: c.textSecondary),

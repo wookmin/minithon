@@ -230,3 +230,20 @@ final myPostedErrandsProvider = FutureProvider<List<ErrandRequest>>((ref) async 
   if (uid == null || uid.isEmpty) return const [];
   return all.where((request) => request.requesterUid == uid).toList();
 });
+
+/// 홈 '앞으로의 일정' — 내가 올린 요청 중 희망 날짜가 오늘 이후인 것을 날짜순으로.
+final upcomingErrandsProvider = FutureProvider<List<ErrandRequest>>((ref) async {
+  final posted = await ref.watch(myPostedErrandsProvider.future);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final upcoming =
+      posted
+          .where(
+            (request) =>
+                request.preferredDate != null &&
+                !request.preferredDate!.isBefore(today),
+          )
+          .toList()
+        ..sort((a, b) => a.preferredDate!.compareTo(b.preferredDate!));
+  return upcoming;
+});
