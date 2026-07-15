@@ -161,7 +161,7 @@ Future<void> backgroundCallAnalysisMain() async {
       requesterUid: FirebaseAuth.instance.currentUser?.uid ?? '',
       requesterName: me.name,
       onErrandDraft: (draft) =>
-          container!.read(errandRequestsProvider.notifier).add(draft),
+          container!.read(errandDraftsProvider.notifier).add(draft),
     );
     // 분류 실패는 처리 완료로 기록하지 않는다(다음 기회에 재시도).
     if (result.failed) {

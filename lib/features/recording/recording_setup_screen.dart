@@ -113,7 +113,7 @@ class _RecordingSetupScreenState extends ConsumerState<RecordingSetupScreen> {
         requesterUid: ref.read(currentUidProvider) ?? '',
         requesterName: me?.name ?? '',
         onErrandDraft: (draft) =>
-            ref.read(errandRequestsProvider.notifier).add(draft),
+            ref.read(errandDraftsProvider.notifier).add(draft),
       );
       if (!mounted) return;
       if (analysis.failed) {

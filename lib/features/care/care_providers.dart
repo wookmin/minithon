@@ -231,6 +231,67 @@ final myPostedErrandsProvider = FutureProvider<List<ErrandRequest>>((ref) async 
   return all.where((request) => request.requesterUid == uid).toList();
 });
 
+/// 통화 분석이 만든 비공개 초안 목록. 게시 전까지 본인만 본다.
+final errandDraftsProvider =
+    AsyncNotifierProvider<ErrandDraftsNotifier, List<ErrandRequest>>(
+      ErrandDraftsNotifier.new,
+    );
+
+class ErrandDraftsNotifier extends AsyncNotifier<List<ErrandRequest>> {
+  @override
+  Future<List<ErrandRequest>> build() async {
+    final uid = ref.watch(currentUidProvider);
+    if (uid == null || uid.isEmpty) return const [];
+    final snapshot = await ref
+        .watch(firebaseFirestoreProvider)
+        .collection(FirestorePaths.users)
+        .doc(uid)
+        .collection(FirestorePaths.errandDrafts)
+        .get();
+    final drafts = snapshot.docs
+        .map((doc) => ErrandRequest.fromJson(doc.data()))
+        .where((draft) => draft.title.isNotEmpty)
+        .toList();
+    drafts.sort((a, b) {
+      final left = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final right = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return right.compareTo(left);
+    });
+    return drafts;
+  }
+
+  Future<void> add(ErrandRequest draft) async {
+    final uid = ref.read(currentUidProvider);
+    if (uid == null || uid.isEmpty || draft.id.isEmpty) return;
+    await _doc(uid, draft.id).set(draft.toJson());
+    ref.invalidateSelf();
+    await future;
+  }
+
+  Future<void> discard(String draftId) async {
+    final uid = ref.read(currentUidProvider);
+    if (uid == null || uid.isEmpty || draftId.isEmpty) return;
+    await _doc(uid, draftId).delete();
+    ref.invalidateSelf();
+    await future;
+  }
+
+  /// 초안을 공개 errands로 게시하고 초안에서 제거한다.
+  Future<void> publish(ErrandRequest draft) async {
+    await ref.read(errandRequestsProvider.notifier).add(draft);
+    await discard(draft.id);
+  }
+
+  DocumentReference<Map<String, dynamic>> _doc(String uid, String id) {
+    return ref
+        .read(firebaseFirestoreProvider)
+        .collection(FirestorePaths.users)
+        .doc(uid)
+        .collection(FirestorePaths.errandDrafts)
+        .doc(id);
+  }
+}
+
 /// 홈 '앞으로의 일정' — 내가 올린 요청 중 희망 날짜가 오늘 이후인 것을 날짜순으로.
 final upcomingErrandsProvider = FutureProvider<List<ErrandRequest>>((ref) async {
   final posted = await ref.watch(myPostedErrandsProvider.future);

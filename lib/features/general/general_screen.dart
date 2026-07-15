@@ -160,23 +160,36 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
     ];
   }
 
-  /// 부탁해요: 내가 올린 요청 목록 + 날짜 지정.
+  /// 부탁해요: 검토 대기 초안 + 게시된 내 요청.
   List<Widget> _requestBody(Color accent) {
+    final drafts = ref.watch(errandDraftsProvider).asData?.value ?? const [];
     final posted = ref.watch(myPostedErrandsProvider);
     return [
+      if (drafts.isNotEmpty) ...[
+        _sectionLabel('검토 대기 · 게시하면 이웃에게 보여요'),
+        for (final draft in drafts)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+            child: _DraftCard(draft: draft, accent: accent),
+          ),
+        const SizedBox(height: 12),
+      ],
       posted.when(
         data: (all) {
           if (all.isEmpty) {
-            return const _EmptyState(
-              title: '아직 올린 요청이 없어요',
-              message: '부모님과 통화가 분석되면 필요한 도움이 자동으로 올라와요.',
-            );
+            return drafts.isNotEmpty
+                ? const SizedBox.shrink()
+                : const _EmptyState(
+                    title: '아직 올린 요청이 없어요',
+                    message: '부모님과 통화가 분석되면 초안이 여기에 올라와요.',
+                  );
           }
           return Column(
             children: [
+              _sectionLabel('게시된 요청'),
               for (final errand in all)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
                   child: _PostedErrandCard(errand: errand, accent: accent),
                 ),
             ],
@@ -198,6 +211,20 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
         ),
       ),
     ];
+  }
+
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 4, 20, 6),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: context.colors.textSecondary,
+        ),
+      ),
+    );
   }
 }
 
@@ -325,6 +352,99 @@ String _timeAgo(DateTime time) {
   final m = time.month.toString().padLeft(2, '0');
   final d = time.day.toString().padLeft(2, '0');
   return '${time.year}.$m.$d';
+}
+
+/// 검토 대기 초안 카드 — 통화가 만든 비공개 초안. 게시해야 공개된다.
+class _DraftCard extends ConsumerWidget {
+  const _DraftCard({required this.draft, required this.accent});
+
+  final ErrandRequest draft;
+  final Color accent;
+
+  Future<void> _publish(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(errandDraftsProvider.notifier).publish(draft);
+      if (!context.mounted) return;
+      await showConfirmSheet(
+        context,
+        icon: Icons.campaign_rounded,
+        title: '게시했어요',
+        message: '이웃에게 도움 요청이 전달됐어요.\n지원자가 생기면 알려드릴게요.',
+      );
+    } on Object catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('게시에 실패했어요.')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final text = Theme.of(context).textTheme;
+    final date = draft.preferredDate;
+    final meta = [
+      draft.category,
+      draft.region,
+      if (date != null) '${date.month}월 ${date.day}일',
+    ].where((value) => value.isNotEmpty).join(' · ');
+    return SoftCard(
+      color: c.generalSoft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.drafts_outlined, size: 16, color: accent),
+              const SizedBox(width: 5),
+              Text(
+                '게시 전 초안',
+                style: text.bodySmall?.copyWith(
+                  color: accent,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            draft.title,
+            style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(meta, style: text.bodySmall?.copyWith(color: c.textSecondary)),
+          if (draft.description.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              draft.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: text.bodyMedium?.copyWith(color: c.textSecondary),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => _publish(context, ref),
+                  icon: const Icon(Icons.send_rounded, size: 18),
+                  label: const Text('게시하기'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: () =>
+                    ref.read(errandDraftsProvider.notifier).discard(draft.id),
+                child: const Text('삭제'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// 부탁해요(내가 올린 요청) 카드 — 지원 현황 + 희망 날짜 지정.
