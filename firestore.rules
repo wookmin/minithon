@@ -7,14 +7,24 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // 공용 카탈로그(심부름·전문가): 로그인 사용자는 읽기만, 쓰기는 관리자만(콘솔).
+    // 공용 구인글(심부름): 로그인 사용자는 읽을 수 있다.
     match /errands/{document} {
       allow read: if request.auth != null;
-      allow write: if false;
-    }
-    match /experts/{document} {
-      allow read: if request.auth != null;
-      allow write: if false;
+
+      // 게시: 작성자 본인이 자기 uid로만 새 요청을 만들 수 있다.
+      allow create: if request.auth != null
+        && request.resource.data.requesterUid == request.auth.uid;
+
+      // 수정: 작성자는 자기 글을 수정(날짜·상태), 그 외에는 지원(helpers)만 변경 가능.
+      allow update: if request.auth != null && (
+        resource.data.requesterUid == request.auth.uid
+        || request.resource.data.diff(resource.data)
+            .affectedKeys().hasOnly(['helpers'])
+      );
+
+      // 삭제: 작성자 본인만.
+      allow delete: if request.auth != null
+        && resource.data.requesterUid == request.auth.uid;
     }
 
     // 그 외 경로는 기본 차단.
