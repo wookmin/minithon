@@ -144,14 +144,14 @@ void main() {
 
     expect(find.text('오늘 확인할 일정'), findsOneWidget);
 
-    final hospitalTab = find.descendant(
+    final errandTab = find.descendant(
       of: find.byType(NavigationBar),
-      matching: find.text('건강'),
+      matching: find.text('심부름'),
     );
-    await tester.tap(hospitalTab);
+    await tester.tap(errandTab);
     await tester.pumpAndSettle();
 
-    expect(find.text('가까운 병원 찾기'), findsOneWidget);
+    expect(find.text('지역 심부름'), findsOneWidget);
   });
 
   testWidgets('대상자가 없으면 로그인 후 온보딩으로 이동한다', (tester) async {
@@ -182,7 +182,7 @@ void main() {
   });
 
   testWidgets('미로그인 딥링크는 로그인 화면으로 보호된다', (tester) async {
-    await _pumpApp(tester, initialLocation: '/hospital');
+    await _pumpApp(tester, initialLocation: '/general');
 
     expect(find.text('똥강아지'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, '로그인'), findsOneWidget);

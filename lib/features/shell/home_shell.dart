@@ -36,19 +36,9 @@ class HomeShell extends StatelessWidget {
             label: '심부름',
           ),
           NavigationDestination(
-            icon: Icon(Icons.favorite_outline_rounded),
-            selectedIcon: Icon(Icons.favorite_rounded),
-            label: '건강',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: '홈',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.diversity_1_outlined),
-            selectedIcon: Icon(Icons.diversity_1_rounded),
-            label: '전문가',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
@@ -97,12 +87,8 @@ class _ProductHeader extends StatelessWidget {
       case 0:
         return '지역 심부름';
       case 1:
-        return '건강';
-      case 2:
         return '홈';
-      case 3:
-        return '전문가';
-      case 4:
+      case 2:
         return '마이';
       default:
         return '홈';

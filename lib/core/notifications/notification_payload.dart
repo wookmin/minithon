@@ -2,14 +2,13 @@ import '../../features/classification/need_category.dart';
 
 /// 카테고리 → 알림에 실을 목적지 라우트.
 /// [NeedCategory.none]은 알림을 띄우지 않으므로 라우트가 없다(null).
+/// 3탭 개편으로 건강·전문가 화면이 사라져, 니즈 알림은 모두 심부름(구인) 화면으로 보낸다.
 String? routeForCategory(NeedCategory category) {
   switch (category) {
     case NeedCategory.hospital:
-      return '/hospital';
     case NeedCategory.general:
-      return '/general';
     case NeedCategory.professional:
-      return '/professional';
+      return '/general';
     case NeedCategory.none:
       return null;
   }

@@ -182,14 +182,3 @@ class ErrandRequestsNotifier extends AsyncNotifier<List<ErrandRequest>> {
     await future;
   }
 }
-
-final careExpertsProvider = FutureProvider<List<CareExpert>>((ref) async {
-  final snapshot = await ref
-      .watch(firebaseFirestoreProvider)
-      .collection(FirestorePaths.experts)
-      .get();
-  return snapshot.docs
-      .map((doc) => CareExpert.fromJson(doc.data()))
-      .where((expert) => expert.name.isNotEmpty)
-      .toList();
-});

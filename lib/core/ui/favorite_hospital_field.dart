@@ -26,7 +26,7 @@ class FavoriteHospitalField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: '자주 가는 병원',
         hintText: '없으면 비워둬도 돼요',
-        helperText: '등록하면 병원 화면에서 먼저 떠올릴 수 있어요.',
+        helperText: '부모님 정보로 저장해 두면 도움 요청에 참고할 수 있어요.',
         prefixIcon: Icon(Icons.local_hospital_outlined, color: c.health),
         constraints: const BoxConstraints(minHeight: 60),
         contentPadding: const EdgeInsets.symmetric(

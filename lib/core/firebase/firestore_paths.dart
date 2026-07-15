@@ -5,5 +5,4 @@ class FirestorePaths {
   static const recipients = 'recipients';
   static const analyses = 'analyses';
   static const errands = 'errands';
-  static const experts = 'experts';
 }
