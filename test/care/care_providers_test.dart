@@ -35,7 +35,6 @@ void main() {
       phoneNumber: '010-1111-2222',
       relationship: '아버지',
       address: '서울시 송파구 올림픽로 1',
-      favoriteHospital: '서울아산병원',
     );
 
     await container.read(careRecipientsProvider.notifier).save(recipient);
@@ -50,12 +49,11 @@ void main() {
       'id': 'r1',
       'name': '김순자',
       'phoneNumber': '010-1234-5678',
-      // address / relationship / favoriteHospital 누락(구버전 문서)
+      // address / relationship 누락(구버전 문서)
     });
 
     expect(recipient.address, '');
     expect(recipient.relationship, '어머니');
-    expect(recipient.favoriteHospital, '');
   });
 
   test('손상 문서(식별자·이름 없음)는 목록에서 제외되고 나머지는 정상 로드된다', () async {

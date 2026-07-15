@@ -7,7 +7,6 @@ class CareRecipient {
     required this.phoneNumber,
     required this.relationship,
     required this.address,
-    required this.favoriteHospital,
   });
 
   factory CareRecipient.fromJson(Map<String, dynamic> json) {
@@ -19,7 +18,6 @@ class CareRecipient {
       phoneNumber: json['phoneNumber'] as String? ?? '',
       relationship: json['relationship'] as String? ?? '어머니',
       address: json['address'] as String? ?? '',
-      favoriteHospital: json['favoriteHospital'] as String? ?? '',
     );
   }
 
@@ -28,7 +26,6 @@ class CareRecipient {
   final String phoneNumber;
   final String relationship;
   final String address;
-  final String favoriteHospital;
 
   Map<String, dynamic> toJson() {
     return {
@@ -37,7 +34,6 @@ class CareRecipient {
       'phoneNumber': phoneNumber,
       'relationship': relationship,
       'address': address,
-      'favoriteHospital': favoriteHospital,
     };
   }
 }

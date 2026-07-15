@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 import '../../core/ui/address_field.dart';
-import '../../core/ui/favorite_hospital_field.dart';
 import '../../core/ui/phone_number_field.dart';
 import '../../core/ui/screen_header.dart';
 import '../../core/ui/soft_card.dart';
@@ -250,7 +249,9 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
     if ([name, phone, address].any((value) => value.isEmpty)) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('이름·전화번호·내 지역을 모두 입력해주세요.')));
+        ..showSnackBar(
+          const SnackBar(content: Text('이름·전화번호·내 지역을 모두 입력해주세요.')),
+        );
       return;
     }
 
@@ -373,11 +374,6 @@ class _RecipientCard extends StatelessWidget {
           const SizedBox(height: 8),
           _InfoLine(icon: Icons.call_outlined, text: recipient.phoneNumber),
           _InfoLine(icon: Icons.home_outlined, text: recipient.address),
-          if (recipient.favoriteHospital.isNotEmpty)
-            _InfoLine(
-              icon: Icons.local_hospital_outlined,
-              text: recipient.favoriteHospital,
-            ),
         ],
       ),
     );
@@ -501,7 +497,6 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
-  late final TextEditingController _hospitalController;
   late final TextEditingController _customRelationshipController;
   bool _busy = false;
   late String _relationship;
@@ -515,9 +510,6 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
       text: recipient?.phoneNumber ?? '',
     );
     _addressController = TextEditingController(text: recipient?.address ?? '');
-    _hospitalController = TextEditingController(
-      text: recipient?.favoriteHospital ?? '',
-    );
     final savedRelationship = recipient?.relationship;
     if (savedRelationship != null &&
         savedRelationship.isNotEmpty &&
@@ -537,7 +529,6 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
-    _hospitalController.dispose();
     _customRelationshipController.dispose();
     super.dispose();
   }
@@ -547,7 +538,6 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
     final address = _addressController.text.trim();
-    final hospital = _hospitalController.text.trim();
     final relationship = _resolvedRelationship;
     if ([name, phone, address].any((value) => value.isEmpty)) {
       ScaffoldMessenger.of(context)
@@ -570,7 +560,6 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
       phoneNumber: phone,
       relationship: relationship,
       address: address,
-      favoriteHospital: hospital,
     );
     setState(() => _busy = true);
     try {
@@ -656,7 +645,6 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: AddressField(controller: _addressController),
               ),
-              FavoriteHospitalField(controller: _hospitalController),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: _busy ? null : _save,

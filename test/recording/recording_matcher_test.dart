@@ -12,7 +12,6 @@ void main() {
       phoneNumber: '010-3245-7788',
       relationship: '어머니',
       address: '서울시 강남구 테헤란로 1',
-      favoriteHospital: '가까운 병원',
     ),
   ];
 
@@ -58,7 +57,6 @@ void main() {
         phoneNumber: '010-7577-8343',
         relationship: '아버지',
         address: '서울시 강남구 테헤란로 1',
-        favoriteHospital: '가까운 병원',
       ),
     ];
 

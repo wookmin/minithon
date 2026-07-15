@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 import '../../core/ui/address_field.dart';
-import '../../core/ui/favorite_hospital_field.dart';
 import '../../core/ui/phone_number_field.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
@@ -38,7 +37,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
   final _address = TextEditingController();
-  final _hospital = TextEditingController();
   final _customRelationship = TextEditingController();
   String _relationship = '어머니';
   bool _busy = false;
@@ -48,7 +46,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _name.dispose();
     _phone.dispose();
     _address.dispose();
-    _hospital.dispose();
     _customRelationship.dispose();
     super.dispose();
   }
@@ -85,7 +82,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               phoneNumber: phone,
               relationship: relationship,
               address: address,
-              favoriteHospital: _hospital.text.trim(),
             ),
           );
       if (mounted) context.go('/home');
@@ -180,13 +176,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               hint: '통화 녹음 매칭에 사용해요',
             ),
             const SizedBox(height: 16),
-            AddressField(controller: _address, hint: '주소 검색 (주변 병원에 사용)'),
-            const SizedBox(height: 16),
-            FavoriteHospitalField(
-              controller: _hospital,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _save(),
-            ),
+            AddressField(controller: _address, hint: '부모님 거주지 (통화 매칭·요청 지역)'),
             const SizedBox(height: 26),
             FilledButton(
               onPressed: _busy ? null : _save,
