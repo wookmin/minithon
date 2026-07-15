@@ -18,11 +18,20 @@ String? routeForCategory(NeedCategory category) {
 ({String title, String body})? notificationContentFor(NeedCategory category) {
   switch (category) {
     case NeedCategory.hospital:
-      return (title: '건강 관련 니즈 발견', body: '부모님이 몸이 불편하신 것 같아요. 근처 병원을 확인해보세요.');
+      return (
+        title: '건강 관련 도움이 필요해요',
+        body: '통화에서 병원 관련 도움이 감지됐어요. 해주세요에서 업체를 확인하세요.',
+      );
     case NeedCategory.general:
-      return (title: '심부름 니즈 발견', body: '부모님께 생활 도움이 필요해 보여요. 요청을 확인해보세요.');
+      return (
+        title: '생활 도움이 필요해요',
+        body: '통화에서 생활 도움이 감지됐어요. 해주세요에서 업체를 확인하세요.',
+      );
     case NeedCategory.professional:
-      return (title: '전문 돌봄 니즈 발견', body: '전문 돌봄이 필요해 보여요. 전문 탭을 확인해보세요.');
+      return (
+        title: '전문 돌봄이 필요해요',
+        body: '통화에서 전문 돌봄이 감지됐어요. 해주세요에서 업체를 확인하세요.',
+      );
     case NeedCategory.none:
       return null;
   }

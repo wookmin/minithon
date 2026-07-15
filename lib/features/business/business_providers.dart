@@ -13,6 +13,19 @@ final localBusinessesProvider = Provider<List<LocalBusiness>>(
 /// 더미일 때는 실제 전화 연결 대신 데모 안내만 한다(오연결·오해 방지).
 final businessesAreDemoProvider = Provider<bool>((ref) => true);
 
+/// 해주세요 화면의 선택 카테고리. 홈 추천 카드가 이 값을 바꿔 딥링크처럼 동작한다.
+final selectedBusinessCategoryProvider =
+    NotifierProvider<SelectedBusinessCategoryNotifier, String>(
+      SelectedBusinessCategoryNotifier.new,
+    );
+
+class SelectedBusinessCategoryNotifier extends Notifier<String> {
+  @override
+  String build() => '전체';
+
+  void select(String category) => state = category;
+}
+
 /// 통화 니즈 → 업체 카테고리. general은 serviceType(수리/청소/장보기/교통)으로 세분한다.
 /// none은 매칭 대상이 없다.
 String? businessCategoryForNeed(NeedCategory category, {String serviceType = ''}) {

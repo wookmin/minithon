@@ -132,19 +132,24 @@ class _RecommendationStrip extends ConsumerWidget {
   }
 }
 
-class _RecoCard extends StatelessWidget {
+class _RecoCard extends ConsumerWidget {
   const _RecoCard({required this.record, required this.business});
 
   final AnalysisRecord record;
   final LocalBusiness? business;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final text = Theme.of(context).textTheme;
     final b = business;
     return SoftCard(
-      onTap: () => context.go('/general'),
+      onTap: () {
+        ref
+            .read(selectedBusinessCategoryProvider.notifier)
+            .select(business?.category ?? '전체');
+        context.go('/general');
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

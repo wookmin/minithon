@@ -22,12 +22,12 @@ class GeneralScreen extends ConsumerStatefulWidget {
 
 class _GeneralScreenState extends ConsumerState<GeneralScreen> {
   static const _filters = ['전체', '수리', '청소', '장보기', '병원 동행', '간병'];
-  String _filter = '전체';
   int _recipientIndex = 0;
   bool _showOtherRegions = false;
 
   @override
   Widget build(BuildContext context) {
+    final filter = ref.watch(selectedBusinessCategoryProvider);
     final recipients =
         ref.watch(careRecipientsProvider).asData?.value ?? const [];
     final index = recipients.isEmpty
@@ -42,7 +42,7 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
     final businesses = matchBusinesses(
       all: all,
       region: parentAddress,
-      category: _filter == '전체' ? null : _filter,
+      category: filter == '전체' ? null : filter,
       allowOtherRegions: _showOtherRegions,
     );
 
@@ -85,8 +85,10 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
               for (final f in _filters)
                 _FilterChip(
                   label: f,
-                  selected: f == _filter,
-                  onTap: () => setState(() => _filter = f),
+                  selected: f == filter,
+                  onTap: () => ref
+                      .read(selectedBusinessCategoryProvider.notifier)
+                      .select(f),
                 ),
             ],
           ),
