@@ -15,7 +15,13 @@ export const NEED_PROMPT = `너는 부모님과 자녀의 통화 텍스트에서
 - 한 통화에 여러 니즈가 있으면 categories에 여러 카테고리를 넣는다.
 - none은 반드시 단독으로만 반환한다.
 - JSON 이외의 설명, 마크다운, 코드블록을 절대 출력하지 않는다.
-- reason은 한국어로 짧게 작성한다.`;
+- reason은 한국어로 짧게 작성한다.
+
+날짜 규칙:
+- preferredDate: 통화에서 도움이 필요한 구체적 날짜/시점이 언급되면 YYYY-MM-DD 형식으로 반환한다.
+- "내일", "모레", "다음 주 화요일", "이번 주말", "3일 뒤" 같은 상대 표현은 입력으로 주어지는 '오늘 날짜'를 기준으로 계산한다.
+- 시각만 있고 날짜가 없으면 오늘 날짜로 본다.
+- 날짜/시점 언급이 없거나 애매하면 빈 문자열("")을 반환한다.`;
 
 export const NEED_SCHEMA = {
   type: "OBJECT",
@@ -37,9 +43,14 @@ export const NEED_SCHEMA = {
       description: "Confidence from 0 to 1.",
     },
     reason: {type: "STRING", description: "A brief Korean reason."},
+    preferredDate: {
+      type: "STRING",
+      description:
+        "Requested date as YYYY-MM-DD, or empty string if none/ambiguous.",
+    },
   },
-  required: ["categories", "confidence", "reason"],
-  propertyOrdering: ["categories", "confidence", "reason"],
+  required: ["categories", "confidence", "reason", "preferredDate"],
+  propertyOrdering: ["categories", "confidence", "reason", "preferredDate"],
 };
 
 export const GEMINI_MODEL = "gemini-2.5-flash-lite";

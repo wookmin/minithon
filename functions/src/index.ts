@@ -70,8 +70,20 @@ export const classifyNeed = onCall(
     await enforceDailyQuota(req.auth.uid, "classify");
     const text = String(req.data?.text ?? "").trim();
     if (text.length === 0) {
-      return {categories: ["none"], confidence: 1, reason: "빈 텍스트"};
+      return {
+        categories: ["none"],
+        confidence: 1,
+        reason: "빈 텍스트",
+        preferredDate: "",
+      };
     }
+
+    // 상대 날짜("다음 주 화요일") 계산 기준일. 클라이언트가 통화 시각을 주면
+    // 그 날짜를, 없으면 서버 오늘 날짜를 쓴다.
+    const clientToday = String(req.data?.today ?? "").trim();
+    const today = /^\d{4}-\d{2}-\d{2}$/.test(clientToday)
+      ? clientToday
+      : new Date().toISOString().slice(0, 10);
 
     const res = await fetch(GEMINI_ENDPOINT(GEMINI_MODEL), {
       method: "POST",
@@ -81,7 +93,12 @@ export const classifyNeed = onCall(
       },
       body: JSON.stringify({
         systemInstruction: {parts: [{text: NEED_PROMPT}]},
-        contents: [{role: "user", parts: [{text: `통화 텍스트:\n${text}`}]}],
+        contents: [
+          {
+            role: "user",
+            parts: [{text: `오늘 날짜: ${today}\n통화 텍스트:\n${text}`}],
+          },
+        ],
         generationConfig: {
           temperature: 0,
           maxOutputTokens: 256,
