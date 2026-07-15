@@ -7,8 +7,12 @@ import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
 import '../../core/ui/skeleton.dart';
 import '../../core/ui/soft_card.dart';
-import '../care/care_models.dart';
+import '../analysis/analysis_history_providers.dart';
+import '../analysis/analysis_record.dart';
+import '../business/business_providers.dart';
+import '../business/local_business.dart';
 import '../care/care_providers.dart';
+import '../classification/need_category.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../recording/analysis_setup_prompt.dart';
 
@@ -66,105 +70,142 @@ class HomeDashboardScreen extends ConsumerWidget {
           ),
         ),
         const _SectionTitle(
-          title: '앞으로의 일정',
-          subtitle: '부모님께 필요한 도움을 날짜순으로 정리했어요',
+          title: '최근 통화 도움',
+          subtitle: '통화에서 발견한 니즈에 맞는 업체를 추천해요',
         ),
         const SizedBox(height: 12),
-        const _MyPostedStrip(),
+        const _RecommendationStrip(),
       ],
     );
   }
 }
 
-/// 앞으로의 일정 — 날짜가 정해진 내 부탁해요를 날짜순으로 미리보기.
-class _MyPostedStrip extends ConsumerWidget {
-  const _MyPostedStrip();
+/// 최근 통화 니즈에 맞는 지역 업체를 추천한다.
+class _RecommendationStrip extends ConsumerWidget {
+  const _RecommendationStrip();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final upcoming = ref.watch(upcomingErrandsProvider);
-    return upcoming.when(
-      data: (items) => items.isEmpty
-          ? const _EmptyPostedCard()
-          : Column(
-              children: [
-                for (final errand in items.take(4))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _PostedCard(errand: errand),
-                  ),
-              ],
-            ),
+    final history = ref.watch(analysisHistoryProvider);
+    final recipients =
+        ref.watch(careRecipientsProvider).asData?.value ?? const [];
+    final parentAddress = recipients.isNotEmpty ? recipients.first.address : '';
+    final all = ref.watch(localBusinessesProvider);
+
+    return history.when(
+      data: (records) {
+        final needs = records
+            .where((r) => r.categories.any((c) => c != NeedCategory.none))
+            .take(3)
+            .toList();
+        if (needs.isEmpty) return const _EmptyReco();
+        return Column(
+          children: [
+            for (final record in needs)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _RecoCard(
+                  record: record,
+                  business: _pick(all, parentAddress, record),
+                ),
+              ),
+          ],
+        );
+      },
       loading: () => const _LoadingCard(height: 84),
       error: (_, _) => const SizedBox.shrink(),
     );
   }
+
+  LocalBusiness? _pick(
+    List<LocalBusiness> all,
+    String region,
+    AnalysisRecord record,
+  ) {
+    for (final category in record.categories) {
+      final biz = businessCategoryForNeed(category);
+      if (biz == null) continue;
+      final matched = matchBusinesses(all: all, region: region, category: biz);
+      if (matched.isNotEmpty) return matched.first;
+    }
+    return null;
+  }
 }
 
-class _PostedCard extends StatelessWidget {
-  const _PostedCard({required this.errand});
+class _RecoCard extends StatelessWidget {
+  const _RecoCard({required this.record, required this.business});
 
-  final ErrandRequest errand;
+  final AnalysisRecord record;
+  final LocalBusiness? business;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final text = Theme.of(context).textTheme;
-    final date = errand.preferredDate;
+    final b = business;
     return SoftCard(
+      onTap: () => context.go('/general'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (date != null) ...[
-                Icon(Icons.event_rounded, size: 16, color: c.general),
-                const SizedBox(width: 5),
+              Icon(
+                Icons.record_voice_over_outlined,
+                size: 18,
+                color: c.general,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  record.summary,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.bodyMedium?.copyWith(height: 1.4),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (b != null)
+            Row(
+              children: [
+                Icon(Icons.storefront_rounded, size: 16, color: c.general),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${b.name} · ${b.category}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: text.bodySmall?.copyWith(
+                      color: c.general,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
                 Text(
-                  '${date.month}월 ${date.day}일',
-                  style: text.bodyMedium?.copyWith(
+                  '연결 →',
+                  style: text.bodySmall?.copyWith(
                     color: c.general,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
-              const Spacer(),
-              _StatusPill(
-                label: '지원 ${errand.helperCount}명',
-                color: errand.helperCount > 0 ? c.general : c.textSecondary,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            errand.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.place_outlined, size: 15, color: c.textSecondary),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  '${errand.category} · ${errand.region}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: text.bodySmall?.copyWith(color: c.textSecondary),
-                ),
-              ),
-            ],
-          ),
+            )
+          else
+            Text(
+              '맞는 업체를 찾고 있어요. 해주세요에서 직접 둘러볼 수 있어요.',
+              style: text.bodySmall?.copyWith(color: c.textSecondary),
+            ),
         ],
       ),
     );
   }
 }
 
-class _EmptyPostedCard extends StatelessWidget {
-  const _EmptyPostedCard();
+class _EmptyReco extends StatelessWidget {
+  const _EmptyReco();
 
   @override
   Widget build(BuildContext context) {
@@ -173,43 +214,21 @@ class _EmptyPostedCard extends StatelessWidget {
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
-          Icon(Icons.event_available_outlined, color: c.textSecondary, size: 22),
+          Icon(
+            Icons.record_voice_over_outlined,
+            color: c.textSecondary,
+            size: 22,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '예정된 일정이 없어요. 심부름 > 부탁해요에서 날짜를 정하면 여기에 표시돼요.',
+              '아직 분석된 통화가 없어요. 부모님과 통화하면 필요한 도움을 찾아 업체를 추천해드려요.',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: c.textSecondary),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }

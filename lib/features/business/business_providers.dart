@@ -1,12 +1,27 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../care/region_matcher.dart';
+import '../classification/need_category.dart';
 import 'local_business.dart';
 
 /// 입점 업체 목록. 지금은 더미 상수, 이후 Firestore로 교체 가능한 지점.
 final localBusinessesProvider = Provider<List<LocalBusiness>>(
   (ref) => kDummyBusinesses,
 );
+
+/// 통화 니즈 카테고리 → 업체 카테고리. none은 매칭 대상이 없다.
+String? businessCategoryForNeed(NeedCategory category) {
+  switch (category) {
+    case NeedCategory.hospital:
+      return '병원 동행';
+    case NeedCategory.professional:
+      return '간병';
+    case NeedCategory.general:
+      return '장보기';
+    case NeedCategory.none:
+      return null;
+  }
+}
 
 /// 지역·카테고리로 업체를 추린다.
 /// 같은 지역(시/군/구) 업체를 우선하고, 지역 매칭이 하나도 없으면
