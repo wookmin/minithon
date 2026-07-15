@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors_x.dart';
+import 'auth_prefs.dart';
 import 'auth_providers.dart';
 import 'auth_repository.dart';
 import 'auth_widgets.dart';
@@ -17,7 +18,25 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _prefs = AuthPrefs();
   bool _busy = false;
+  bool _rememberEmail = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedEmail();
+  }
+
+  Future<void> _loadSavedEmail() async {
+    final saved = await _prefs.readSavedEmail();
+    if (saved != null && mounted) {
+      setState(() {
+        _email.text = saved;
+        _rememberEmail = true;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -52,11 +71,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ..showSnackBar(const SnackBar(content: Text('이메일과 비밀번호를 입력해주세요.')));
       return;
     }
-    _run(
-      () => ref
+    _run(() async {
+      await ref
           .read(authRepositoryProvider)
-          .signInWithEmail(email: email, password: password),
+          .signInWithEmail(email: email, password: password);
+      if (_rememberEmail) {
+        await _prefs.saveEmail(email);
+      } else {
+        await _prefs.clearSavedEmail();
+      }
+    });
+  }
+
+  Future<void> _openPasswordReset() async {
+    final sent = await showPasswordResetSheet(
+      context,
+      repository: ref.read(authRepositoryProvider),
+      initialEmail: _email.text.trim(),
     );
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('재설정 링크를 보냈어요. 메일함을 확인해주세요.')));
+    }
   }
 
   String _destinationAfterAuth() {
@@ -108,7 +145,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               onSubmitted: (_) => _loginWithEmail(),
               decoration: const InputDecoration(labelText: '비밀번호'),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                InkWell(
+                  onTap: _busy
+                      ? null
+                      : () => setState(() => _rememberEmail = !_rememberEmail),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Checkbox(
+                          value: _rememberEmail,
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          onChanged: _busy
+                              ? null
+                              : (v) =>
+                                    setState(() => _rememberEmail = v ?? false),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '이메일 저장',
+                          style: text.bodyMedium?.copyWith(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _busy ? null : _openPasswordReset,
+                  child: const Text('비밀번호를 잊으셨나요?'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             FilledButton(
               onPressed: _busy ? null : _loginWithEmail,
               child: _busy

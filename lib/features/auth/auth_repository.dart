@@ -48,6 +48,7 @@ abstract interface class AuthRepository {
     required String name,
   });
   Future<void> signInWithGoogle();
+  Future<void> sendPasswordReset(String email);
   Future<void> signOut();
 }
 
@@ -103,6 +104,11 @@ class FirebaseAuthRepository implements AuthRepository {
     final idToken = account.authentication.idToken;
     final credential = GoogleAuthProvider.credential(idToken: idToken);
     await _auth.signInWithCredential(credential);
+  }
+
+  @override
+  Future<void> sendPasswordReset(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
   }
 
   @override
