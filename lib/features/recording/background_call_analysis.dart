@@ -28,9 +28,12 @@ import 'recording_matcher.dart';
 Future<void> backgroundCallAnalysisMain() async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
+  debugPrint('[bg] 진입점 시작');
 
   const channel = MethodChannel('senior_needs/bg_analysis');
+  final notification = NotificationService(FlutterLocalNotificationsPlugin());
   ProviderContainer? container;
+  var analyzingShown = false;
   try {
     await Firebase.initializeApp();
     // 저장된 로그인 세션이 복원될 때까지 대기(없으면 null로 진행 → 대상자 없음 처리).
@@ -40,7 +43,6 @@ Future<void> backgroundCallAnalysisMain() async {
         .timeout(const Duration(seconds: 5), onTimeout: () => null);
 
     final prefs = await SharedPreferences.getInstance();
-    final notification = NotificationService(FlutterLocalNotificationsPlugin());
     container = ProviderContainer(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
@@ -51,15 +53,22 @@ Future<void> backgroundCallAnalysisMain() async {
     // 자동 분석 설정이 켜져 있을 때만 진행. 꺼져 있으면(또는 미설정) 녹음 조회·STT·분류를
     // 일절 하지 않는다. (사용자 동의 없이 통화 내용이 서버로 가지 않도록)
     final setup = await container.read(recordingSetupProvider.future);
-    if (!setup.backgroundDetectionEnabled) return;
+    if (!setup.backgroundDetectionEnabled) {
+      debugPrint('[bg] 자동 분석 꺼짐 → 종료');
+      return;
+    }
 
     // 네이티브가 최근 녹음 메타데이터(바이트 제외)를 넘긴다.
     final pending = await channel.invokeMapMethod<String, dynamic>('getPending');
     final rawList = (pending?['recordings'] as List?) ?? const [];
+    debugPrint('[bg] 최근 녹음 ${rawList.length}건 수신');
     if (rawList.isEmpty) return;
 
     final recipients = await container.read(careRecipientsProvider.future);
-    if (recipients.isEmpty) return;
+    if (recipients.isEmpty) {
+      debugPrint('[bg] 등록된 대상자 없음 → 종료');
+      return;
+    }
 
     // 등록된 대상자와 매칭되는 첫 녹음을 찾는다.
     const matcher = RecordingMatcher();
@@ -87,30 +96,53 @@ Future<void> backgroundCallAnalysisMain() async {
         break;
       }
     }
-    if (matchedUri == null || matched == null) return;
+    if (matchedUri == null || matched == null) {
+      debugPrint('[bg] 매칭되는 녹음 없음 → 종료');
+      return;
+    }
 
     // 중복 분석 방지: 같은 녹음(uri)을 이미 처리했으면 건너뛴다.
     // (중복 broadcast·재실행·탭 분석과의 겹침으로 인한 중복 STT/Gemini/기록 방지)
     const lastAnalyzedKey = 'lastAnalyzedRecordingUri';
-    if (prefs.getString(lastAnalyzedKey) == matchedUri) return;
+    if (prefs.getString(lastAnalyzedKey) == matchedUri) {
+      debugPrint('[bg] 이미 분석한 녹음 → 건너뜀');
+      return;
+    }
+
+    // 알림 초기화 + "분석 중.." 진행 알림. 이후 단계가 실패하면 실패 알림으로 대체된다.
+    // 탭 라우팅은 앱 재실행 시 main isolate의 initialRoute가 담당한다.
+    await notification.init(onSelectRoute: (_) {});
+    await notification.showAnalyzing(recipientName: matched.recipientName);
+    analyzingShown = true;
+    debugPrint('[bg] 매칭: ${matched.recipientName} / ${matched.fileName} → 분석 시작');
 
     // 매칭된 것만 바이트를 임시파일로 받아 읽는다.
     final tempPath = await channel.invokeMethod<String>('readBytes', {
       'uri': matchedUri,
     });
-    if (tempPath == null || tempPath.isEmpty) return;
+    if (tempPath == null || tempPath.isEmpty) {
+      debugPrint('[bg] readBytes 실패(null) → 실패 알림');
+      await notification.showAnalysisFailed('녹음 파일을 읽지 못했어요.');
+      return;
+    }
     final bytes = await File(tempPath).readAsBytes();
-    if (bytes.isEmpty) return;
-
-    // 알림 표시용 초기화. 탭 라우팅은 앱 재실행 시 main isolate의 initialRoute가 담당한다.
-    await notification.init(onSelectRoute: (_) {});
+    if (bytes.isEmpty) {
+      debugPrint('[bg] 녹음 바이트 비어 있음 → 실패 알림');
+      await notification.showAnalysisFailed('녹음 파일이 비어 있어요.');
+      return;
+    }
 
     final stt = await container
         .read(audioTranscriptionServiceProvider)
         .transcribe(bytes: bytes, mimeType: _mimeForName(matched.fileName));
-    if (!stt.isSuccess) return;
+    if (!stt.isSuccess) {
+      debugPrint('[bg] STT 실패: ${stt.error}');
+      await notification.showAnalysisFailed(stt.error ?? '전사에 실패했어요.');
+      return;
+    }
+    debugPrint('[bg] STT 성공(${stt.text!.length}자) → 분류');
 
-    await runNeedAnalysis(
+    final result = await runNeedAnalysis(
       classifier: container.read(needClassifierProvider),
       history: container.read(analysisHistoryProvider.notifier),
       notifications: notification,
@@ -119,8 +151,16 @@ Future<void> backgroundCallAnalysisMain() async {
       callTime: matched.createdAt,
     );
     await prefs.setString(lastAnalyzedKey, matchedUri);
+    await notification.cancelAnalyzing();
+    debugPrint('[bg] 완료. 니즈=${result.hasActionableNeed} '
+        '카테고리=${result.categories.map((c) => c.name).toList()}');
   } on Object catch (error) {
-    debugPrint('백그라운드 통화 분석 실패: $error');
+    debugPrint('[bg] 백그라운드 통화 분석 실패: $error');
+    if (analyzingShown) {
+      try {
+        await notification.showAnalysisFailed('$error');
+      } on Object catch (_) {}
+    }
   } finally {
     container?.dispose();
     // 네이티브가 임시파일 정리 + 엔진 종료하도록 완료 신호.
