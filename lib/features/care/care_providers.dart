@@ -13,6 +13,25 @@ import 'care_models.dart';
 String _myProfileKey(String? uid) => 'myProfile_${uid ?? 'anon'}';
 String _recordingSetupKey(String? uid) => 'recordingSetupState_${uid ?? 'anon'}';
 
+// UID 키 도입 전에 쓰던 공용 키. 최초 1회 UID 키로 이전한다.
+const _legacyMyProfileKey = 'myProfile';
+const _legacyRecordingSetupKey = 'recordingSetupState';
+
+/// 레거시 공용 키 값이 있으면 UID 키로 옮기고 원본을 지운다. 이전된 값(또는 null) 반환.
+Future<String?> _migrateLegacy(
+  SharedPreferences prefs,
+  String? uid,
+  String legacyKey,
+  String uidKey,
+) async {
+  if (uid == null || uid.isEmpty) return null;
+  final legacy = prefs.getString(legacyKey);
+  if (legacy == null || legacy.isEmpty) return null;
+  await prefs.setString(uidKey, legacy);
+  await prefs.remove(legacyKey);
+  return legacy;
+}
+
 final sharedPreferencesProvider = Provider<SharedPreferences>(
   (ref) => throw UnimplementedError('SharedPreferences override is required'),
 );
@@ -66,7 +85,14 @@ class MyProfileNotifier extends AsyncNotifier<MyProfile> {
   Future<MyProfile> build() async {
     final prefs = ref.watch(sharedPreferencesProvider);
     final uid = ref.watch(currentUidProvider);
-    final source = prefs.getString(_myProfileKey(uid));
+    final source =
+        prefs.getString(_myProfileKey(uid)) ??
+        await _migrateLegacy(
+          prefs,
+          uid,
+          _legacyMyProfileKey,
+          _myProfileKey(uid),
+        );
     final authProfile = _profileFromAuth();
     if (source != null && source.isNotEmpty) {
       try {
@@ -114,7 +140,14 @@ class RecordingSetupNotifier extends AsyncNotifier<RecordingSetupState> {
   Future<RecordingSetupState> build() async {
     final prefs = ref.watch(sharedPreferencesProvider);
     final uid = ref.watch(currentUidProvider);
-    final source = prefs.getString(_recordingSetupKey(uid));
+    final source =
+        prefs.getString(_recordingSetupKey(uid)) ??
+        await _migrateLegacy(
+          prefs,
+          uid,
+          _legacyRecordingSetupKey,
+          _recordingSetupKey(uid),
+        );
     if (source == null || source.isEmpty) {
       return const RecordingSetupState.incomplete();
     }
