@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="linear-gradient" x1="250.31" y1="896.39" x2="802.31" y2="144.39" gradientTransform="translate(0 1021.8898) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4b6cff"></stop>
+      <stop offset="1" stop-color="#2754f5"></stop>
+    </linearGradient>
+  </defs>
+  <g fill="none">
+    <rect fill="#ffffff" x="168" y="138" width="688" height="688" rx="188" ry="188"></rect>
+  </g>
+  <rect fill="#eef3fc" width="1024" height="1024" rx="232" ry="232"></rect>
+  <path fill="url(#linear-gradient)" d="M329,369c-45-59-82-63-104-38-29,33,3,102,99,127l5-89Z"></path>
+  <path fill="url(#linear-gradient)" d="M695,369c45-59,82-63,104-38,29,33-3,102-99,127l-5-89Z"></path>
+  <path fill="url(#linear-gradient)" d="M316,425.68c0-95.76,83-173.68,185-173.68h22c102,0,185,77.92,185,173.68v125.8c0,101.39-88,184.01-196,184.01s-196-82.62-196-184.01v-125.8Z"></path>
+  <circle fill="#ffffff" cx="442" cy="437" r="47"></circle>
+  <circle fill="#ffffff" cx="582" cy="437" r="47"></circle>
+  <circle fill="#141b33" cx="452" cy="441" r="20"></circle>
+  <circle fill="#141b33" cx="572" cy="441" r="20"></circle>
+  <path fill="#141b33" d="M488,508c0-13,11-24,24-24s24,11,24,24-11,27-24,27-24-14-24-27Z"></path>
+  <path fill="none" stroke="#141b33" stroke-width="22" stroke-linecap="round" d="M470,575c24,25,60,25,84,0"></path>
+  <path fill="#ffffff" d="M405,676c19-46,58-76,107-76s88,30,107,76c-30,27-67,42-107,42s-77-15-107-42Z"></path>
+  <path fill="#f08067" d="M512,682c-16-16-92-57-92-98,0-30,23-53,52-53,17,0,31,8,40,21,9-13,23-21,40-21,29,0,52,23,52,53,0,41-76,82-92,98Z"></path>
+  <path fill="none" stroke="#f08067" stroke-width="34" stroke-linecap="round" d="M340.72,289c34,0,62,28,62,62"></path>
+  <path fill="none" stroke="#f08067" stroke-width="34" stroke-linecap="round" d="M340.72,351c0-34,28-62,62-62"></path>
+  <ellipse fill="#eef3fc" cx="614.86" cy="324.12" rx="20.54" ry="31.98" transform="translate(-49.1 529.7) rotate(-45)"></ellipse>
+  <ellipse fill="#eef3fc" cx="752.15" cy="377.36" rx="45.89" ry="29.48" transform="translate(-46.53 642.38) rotate(-45)"></ellipse>
+  <ellipse fill="#eef3fc" cx="271.85" cy="377.36" rx="29.48" ry="45.89" transform="translate(-187.21 302.75) rotate(-45)"></ellipse>
+  <circle fill="#eef3fc" cx="652.33" cy="361.59" r="13.64"></circle>
+</svg>

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors_x.dart';
+import '../../core/ui/brand_logo.dart';
 import 'auth_repository.dart';
 
 /// 로그인·회원가입 상단 브랜드 로고 + 워드마크.
@@ -9,18 +10,9 @@ class AuthBrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: scheme.primary,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.pets_rounded, color: Colors.white, size: 22),
-        ),
+        const BrandLogo(size: 40),
         const SizedBox(width: 10),
         Text(
           '똥강아지',

@@ -26,27 +26,27 @@ class AppColorsX extends ThemeExtension<AppColorsX> {
   final Color professionalSoft;
 
   static const light = AppColorsX(
-    canvas: Color(0xFFF5F2EB),
-    hairline: Color(0xFFEAE4D8),
-    textSecondary: Color(0xFF77716A),
-    health: Color(0xFFBC6152),
-    healthSoft: Color(0xFFF3E7E0),
-    general: Color(0xFFAA7C38),
-    generalSoft: Color(0xFFF1E8D5),
-    professional: Color(0xFF5F6E97),
-    professionalSoft: Color(0xFFE4E7F0),
+    canvas: Color(0xFFF4F5F7),
+    hairline: Color(0xFFE4E7EB),
+    textSecondary: Color(0xFF4B5768),
+    health: Color(0xFFEC441E),
+    healthSoft: Color(0xFFFCE8E3),
+    general: Color(0xFF997E00),
+    generalSoft: Color(0xFFFAF3CD),
+    professional: Color(0xFF2F4EFF),
+    professionalSoft: Color(0xFFE7EBFF),
   );
 
   static const dark = AppColorsX(
-    canvas: Color(0xFF141815),
-    hairline: Color(0xFF2A312B),
-    textSecondary: Color(0xFF9AA29A),
-    health: Color(0xFFE08872),
-    healthSoft: Color(0xFF33241F),
-    general: Color(0xFFE0B25E),
-    generalSoft: Color(0xFF322A1B),
-    professional: Color(0xFF93A6D8),
-    professionalSoft: Color(0xFF20263A),
+    canvas: Color(0xFF0D0D0D),
+    hairline: Color(0x1FFFFFFF),
+    textSecondary: Color(0xFF999DA3),
+    health: Color(0xFFFF7349),
+    healthSoft: Color(0xFF33201A),
+    general: Color(0xFFE5CB45),
+    generalSoft: Color(0xFF342E0D),
+    professional: Color(0xFF4964FF),
+    professionalSoft: Color(0xFF1B2140),
   );
 
   @override

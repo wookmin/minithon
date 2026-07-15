@@ -3,22 +3,22 @@ import 'package:flutter/material.dart';
 import 'app_colors_x.dart';
 import 'app_shape.dart';
 
-/// 앱 테마. 상록수 그린 브랜드 + 따뜻한 세이지 페이퍼 바탕.
+/// 앱 테마. 브랜드 블루(#2F4EFF) + 쿨그레이 페이퍼 바탕. (Login Register UI Kit 토큰)
 abstract final class AppTheme {
-  static const _brand = Color(0xFF2E6B4F);
-  static const _brandDark = Color(0xFF6FBF93);
+  static const _brand = Color(0xFF2F4EFF);
+  static const _brandDark = Color(0xFF4964FF);
 
   static ThemeData light() => _base(
     brightness: Brightness.light,
     scheme: const ColorScheme.light(
       primary: _brand,
       onPrimary: Colors.white,
-      primaryContainer: Color(0xFFDCE9DE),
-      onPrimaryContainer: Color(0xFF15321F),
+      primaryContainer: Color(0xFFE7EBFF),
+      onPrimaryContainer: _brand,
       secondary: _brand,
       surface: Colors.white,
-      onSurface: Color(0xFF20241E),
-      surfaceContainerHighest: Color(0xFFF0ECE1),
+      onSurface: Color(0xFF191D23),
+      surfaceContainerHighest: Color(0xFFF4F5F7),
     ),
     colorsX: AppColorsX.light,
   );
@@ -27,13 +27,13 @@ abstract final class AppTheme {
     brightness: Brightness.dark,
     scheme: const ColorScheme.dark(
       primary: _brandDark,
-      onPrimary: Color(0xFF06210F),
-      primaryContainer: Color(0xFF244735),
-      onPrimaryContainer: Color(0xFFD6EEDD),
+      onPrimary: Colors.white,
+      primaryContainer: Color(0xFF1B2140),
+      onPrimaryContainer: Color(0xFFAEBBFF),
       secondary: _brandDark,
-      surface: Color(0xFF1C221E),
-      onSurface: Color(0xFFECEFEA),
-      surfaceContainerHighest: Color(0xFF232A25),
+      surface: Color(0xFF161616),
+      onSurface: Color(0xFFFFFFFF),
+      surfaceContainerHighest: Color(0xFF1C1C1C),
     ),
     colorsX: AppColorsX.dark,
   );
@@ -50,6 +50,11 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: colorsX.canvas,
       fontFamily: 'Pretendard',
     );
+
+    // 인풋 필드 테두리(line-300 / 다크 화이트 16%).
+    final fieldBorder = brightness == Brightness.light
+        ? const Color(0xFFD0D5DD)
+        : const Color(0x29FFFFFF);
 
     final text = base.textTheme.copyWith(
       headlineMedium: base.textTheme.headlineMedium?.copyWith(
@@ -99,7 +104,7 @@ abstract final class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: brightness == Brightness.light
             ? Colors.white
-            : const Color(0xFF1C221E),
+            : const Color(0xFF161616),
         elevation: 0,
         height: 68,
         indicatorColor: scheme.primaryContainer,
@@ -143,20 +148,20 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerHighest,
+        fillColor: scheme.surface,
         hintStyle: TextStyle(color: colorsX.textSecondary),
         labelStyle: TextStyle(color: colorsX.textSecondary),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 15,
+          vertical: 16,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: fieldBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.control),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: fieldBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.control),
@@ -172,13 +177,11 @@ abstract final class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
-          foregroundColor: scheme.primary,
-          side: BorderSide(color: colorsX.hairline),
+          minimumSize: const Size.fromHeight(56),
+          foregroundColor: scheme.onSurface,
+          side: BorderSide(color: fieldBorder),
           textStyle: text.labelLarge?.copyWith(fontSize: 15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.control),
-          ),
+          shape: const StadiumBorder(),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -188,9 +191,7 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(56),
           textStyle: text.labelLarge?.copyWith(fontSize: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.control),
-          ),
+          shape: const StadiumBorder(),
         ),
       ),
       snackBarTheme: SnackBarThemeData(

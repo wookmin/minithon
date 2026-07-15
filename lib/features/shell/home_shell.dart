@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
+import '../../core/ui/brand_logo.dart';
 
 /// 하단 5탭 컨테이너. 상단엔 브랜드 워드마크 + 알림(분석 기록) · 분석 시작 버튼.
 class HomeShell extends StatelessWidget {
@@ -177,16 +178,7 @@ class _BrandIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        color: scheme.primary,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Icon(Icons.pets_rounded, color: scheme.onPrimary, size: 22),
-    );
+    return const BrandLogo(size: 42);
   }
 }
 
