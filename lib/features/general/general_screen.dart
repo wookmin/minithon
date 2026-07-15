@@ -42,15 +42,7 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
               : '$myRegion 이웃의 도움 요청이에요. 도울 수 있는 요청에 지원해보세요.',
           accent: accent,
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: FilledButton.icon(
-            onPressed: () => _showErrandRequestSheet(context),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('요청 올리기'),
-          ),
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         SizedBox(
           height: 40,
           child: ListView(
@@ -120,168 +112,6 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Future<void> _showErrandRequestSheet(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (_) => _ErrandRequestSheet(hostContext: context),
-    );
-  }
-}
-
-class _ErrandRequestSheet extends ConsumerStatefulWidget {
-  const _ErrandRequestSheet({required this.hostContext});
-
-  final BuildContext hostContext;
-
-  @override
-  ConsumerState<_ErrandRequestSheet> createState() =>
-      _ErrandRequestSheetState();
-}
-
-class _ErrandRequestSheetState extends ConsumerState<_ErrandRequestSheet> {
-  static const _categories = ['장보기', '수리', '병원 동행', '교통'];
-
-  final _titleController = TextEditingController();
-  final _regionController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  String _category = _categories.first;
-  bool _busy = false;
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _regionController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (_busy) return;
-    final title = _titleController.text.trim();
-    final region = _regionController.text.trim();
-    final description = _descriptionController.text.trim();
-    if (title.isEmpty || region.isEmpty || description.isEmpty) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('제목, 지역, 내용을 입력해주세요.')));
-      return;
-    }
-
-    final now = DateTime.now();
-    final uid = ref.read(currentUidProvider) ?? '';
-    final requesterName =
-        ref.read(myProfileProvider).asData?.value.name.trim() ?? '';
-    final request = ErrandRequest(
-      id: now.microsecondsSinceEpoch.toString(),
-      title: title,
-      category: _category,
-      region: region,
-      distance: '내 주변',
-      description: description,
-      status: '모집중',
-      requesterUid: uid,
-      requesterName: requesterName,
-      createdAt: now,
-    );
-
-    setState(() => _busy = true);
-    try {
-      await ref.read(errandRequestsProvider.notifier).add(request);
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      if (widget.hostContext.mounted) {
-        await showConfirmSheet(
-          widget.hostContext,
-          icon: Icons.campaign_rounded,
-          title: '요청을 등록했어요',
-          message: '가까운 이웃에게 도움 요청이 전달됐어요.\n지원자가 생기면 알려드릴게요.',
-        );
-      }
-    } on Object catch (_) {
-      if (!mounted) return;
-      setState(() => _busy = false);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('요청을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')),
-        );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 4, 20, bottom + 24),
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          Text('심부름 요청 올리기', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _titleController,
-            textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: '요청 제목',
-              hintText: '예: 병원 동행이 필요해요',
-            ),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _category,
-            decoration: const InputDecoration(labelText: '분류'),
-            items: [
-              for (final category in _categories)
-                DropdownMenuItem(value: category, child: Text(category)),
-            ],
-            onChanged: _busy
-                ? null
-                : (value) {
-                    if (value == null) return;
-                    setState(() => _category = value);
-                  },
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _regionController,
-            textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: '지역',
-              hintText: '예: 강남구 역삼동',
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _descriptionController,
-            minLines: 3,
-            maxLines: 5,
-            textInputAction: TextInputAction.newline,
-            decoration: const InputDecoration(
-              labelText: '요청 내용',
-              hintText: '필요한 도움과 시간을 간단히 적어주세요.',
-            ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: _busy ? null : _save,
-            child: _busy
-                ? SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  )
-                : const Text('등록하기'),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -581,9 +411,7 @@ class _ErrandCard extends ConsumerWidget {
                     : Icons.volunteer_activism_rounded,
                 size: 18,
               ),
-              label: Text(
-                applied ? '지원함' : (_open ? '지원하기' : '마감된 요청'),
-              ),
+              label: Text(applied ? '지원함' : (_open ? '지원하기' : '마감된 요청')),
             ),
           ),
         ],
