@@ -9,9 +9,11 @@ class AnalysisRecord {
     required this.reason,
     required this.snippet,
     String? recipientName,
+    String? recipientRegion,
     DateTime? callTime,
     String? summary,
   }) : recipientName = _nonEmptyOr(recipientName, '알 수 없음'),
+       recipientRegion = recipientRegion?.trim() ?? '',
        callTime = callTime ?? createdAt,
        summary = _nonEmptyOr(summary, reason);
 
@@ -33,6 +35,7 @@ class AnalysisRecord {
       id: json['id'] as String? ?? '',
       createdAt: createdAt,
       recipientName: json['recipientName'] as String?,
+      recipientRegion: json['recipientRegion'] as String?,
       callTime: callTime,
       categories: categories.isEmpty ? [NeedCategory.none] : categories,
       reason: json['reason'] as String? ?? '',
@@ -44,6 +47,9 @@ class AnalysisRecord {
   final String id;
   final DateTime createdAt;
   final String recipientName;
+
+  /// 분석 당시 이 통화 상대(부모)의 지역 주소. 대상자별 업체 추천 기준.
+  final String recipientRegion;
   final DateTime callTime;
   final List<NeedCategory> categories;
   final String reason;
@@ -60,6 +66,7 @@ class AnalysisRecord {
       'id': id,
       'createdAt': createdAt.toIso8601String(),
       'recipientName': recipientName,
+      'recipientRegion': recipientRegion,
       'callTime': callTime.toIso8601String(),
       'categories': categories.map((category) => category.apiValue).toList(),
       'reason': reason,

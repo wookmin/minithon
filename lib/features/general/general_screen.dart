@@ -22,12 +22,16 @@ class GeneralScreen extends ConsumerStatefulWidget {
 class _GeneralScreenState extends ConsumerState<GeneralScreen> {
   static const _filters = ['전체', '수리', '청소', '장보기', '병원 동행', '간병'];
   String _filter = '전체';
+  int _recipientIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final recipients =
         ref.watch(careRecipientsProvider).asData?.value ?? const [];
-    final parentAddress = recipients.isNotEmpty ? recipients.first.address : '';
+    final index = recipients.isEmpty
+        ? 0
+        : _recipientIndex.clamp(0, recipients.length - 1);
+    final parentAddress = recipients.isEmpty ? '' : recipients[index].address;
     final parentRegion = regionKey(parentAddress);
     final accent = context.colors.general;
 
@@ -49,6 +53,24 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
               : '$parentRegion 전문 업체를 연결해드려요. 검색은 저희가 대신할게요.',
           accent: accent,
         ),
+        if (recipients.length > 1) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              children: [
+                for (var i = 0; i < recipients.length; i++)
+                  _FilterChip(
+                    label: recipients[i].name,
+                    selected: i == index,
+                    onTap: () => setState(() => _recipientIndex = i),
+                  ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         SizedBox(
           height: 40,

@@ -164,6 +164,7 @@ Future<void> backgroundCallAnalysisMain() async {
       notifications: notification,
       text: stt.text!,
       recipientName: matched.recipientName,
+      recipientRegion: matched.recipientRegion,
       callTime: matched.createdAt,
     );
     // 분류 실패는 처리 완료로 기록하지 않는다(다음 기회에 재시도).

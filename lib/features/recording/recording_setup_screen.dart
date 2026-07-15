@@ -106,6 +106,7 @@ class _RecordingSetupScreenState extends ConsumerState<RecordingSetupScreen> {
         notifications: ref.read(notificationServiceProvider),
         text: result.text!,
         recipientName: candidate.matchedRecipient?.name ?? '알 수 없음',
+        recipientRegion: candidate.matchedRecipient?.address ?? '',
         callTime: candidate.createdAt,
       );
       if (!mounted) return;

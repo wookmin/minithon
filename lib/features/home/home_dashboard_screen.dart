@@ -87,9 +87,6 @@ class _RecommendationStrip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(analysisHistoryProvider);
-    final recipients =
-        ref.watch(careRecipientsProvider).asData?.value ?? const [];
-    final parentAddress = recipients.isNotEmpty ? recipients.first.address : '';
     final all = ref.watch(localBusinessesProvider);
 
     return history.when(
@@ -106,7 +103,7 @@ class _RecommendationStrip extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _RecoCard(
                   record: record,
-                  business: _pick(all, parentAddress, record),
+                  business: _pick(all, record),
                 ),
               ),
           ],
@@ -117,15 +114,15 @@ class _RecommendationStrip extends ConsumerWidget {
     );
   }
 
-  LocalBusiness? _pick(
-    List<LocalBusiness> all,
-    String region,
-    AnalysisRecord record,
-  ) {
+  LocalBusiness? _pick(List<LocalBusiness> all, AnalysisRecord record) {
     for (final category in record.categories) {
       final biz = businessCategoryForNeed(category);
       if (biz == null) continue;
-      final matched = matchBusinesses(all: all, region: region, category: biz);
+      final matched = matchBusinesses(
+        all: all,
+        region: record.recipientRegion,
+        category: biz,
+      );
       if (matched.isNotEmpty) return matched.first;
     }
     return null;

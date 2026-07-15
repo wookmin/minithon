@@ -16,6 +16,7 @@ Future<NeedClassificationResult> runNeedAnalysis({
   required NotificationService notifications,
   required String text,
   required String recipientName,
+  String recipientRegion = '',
   DateTime? callTime,
 }) async {
   final result = await classifier.classify(text);
@@ -35,6 +36,7 @@ Future<NeedClassificationResult> runNeedAnalysis({
       id: now.microsecondsSinceEpoch.toString(),
       createdAt: now,
       recipientName: recipientName,
+      recipientRegion: recipientRegion,
       callTime: callTime ?? now,
       categories: result.categories,
       reason: result.reason,
