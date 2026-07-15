@@ -16,6 +16,7 @@ import '../analysis/analysis_history_providers.dart';
 import '../analysis/analysis_pipeline.dart';
 import '../classification/classification_providers.dart';
 import '../care/care_models.dart';
+import '../../core/firebase/firebase_providers.dart';
 import '../care/care_providers.dart';
 import '../classification/need_category.dart';
 import '../classification/need_classification_result.dart';
@@ -291,6 +292,7 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
         ref.read(careRecipientsProvider).asData?.value.firstOrNull?.name ??
         '알 수 없음';
 
+    final me = ref.read(myProfileProvider).asData?.value;
     final result = await runNeedAnalysis(
       classifier: ref.read(needClassifierProvider),
       history: ref.read(analysisHistoryProvider.notifier),
@@ -298,6 +300,11 @@ class _CallAnalysisScreenState extends ConsumerState<CallAnalysisScreen> {
       text: input,
       recipientName: recipientName,
       callTime: callTime,
+      recipientRegion: recipient?.address ?? '',
+      requesterUid: ref.read(currentUidProvider) ?? '',
+      requesterName: me?.name ?? '',
+      onErrandDraft: (draft) =>
+          ref.read(errandRequestsProvider.notifier).add(draft),
     );
 
     if (!mounted) return;

@@ -73,7 +73,13 @@ Future<void> backgroundCallAnalysisMain() async {
     // 등록된 대상자와 매칭되는 첫 녹음을 찾는다.
     const matcher = RecordingMatcher();
     String? matchedUri;
-    ({String recipientName, String fileName, DateTime? createdAt})? matched;
+    ({
+      String recipientName,
+      String recipientRegion,
+      String fileName,
+      DateTime? createdAt,
+    })?
+    matched;
     for (final item in rawList) {
       if (item is! Map) continue;
       final name = item['name'] as String? ?? '';
@@ -90,6 +96,7 @@ Future<void> backgroundCallAnalysisMain() async {
         matchedUri = uri;
         matched = (
           recipientName: candidate.matchedRecipient!.name,
+          recipientRegion: candidate.matchedRecipient!.address,
           fileName: name,
           createdAt: candidate.createdAt,
         );
@@ -142,6 +149,7 @@ Future<void> backgroundCallAnalysisMain() async {
     }
     debugPrint('[bg] STT 성공(${stt.text!.length}자) → 분류');
 
+    final me = await container.read(myProfileProvider.future);
     final result = await runNeedAnalysis(
       classifier: container.read(needClassifierProvider),
       history: container.read(analysisHistoryProvider.notifier),
@@ -149,6 +157,11 @@ Future<void> backgroundCallAnalysisMain() async {
       text: stt.text!,
       recipientName: matched.recipientName,
       callTime: matched.createdAt,
+      recipientRegion: matched.recipientRegion,
+      requesterUid: FirebaseAuth.instance.currentUser?.uid ?? '',
+      requesterName: me.name,
+      onErrandDraft: (draft) =>
+          container!.read(errandRequestsProvider.notifier).add(draft),
     );
     await prefs.setString(lastAnalyzedKey, matchedUri);
     await notification.cancelAnalyzing();
