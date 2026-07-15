@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
@@ -60,30 +61,6 @@ class MyPageScreen extends ConsumerWidget {
                               ? '전화번호 미등록'
                               : profile.phoneNumber,
                           style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.place_outlined,
-                              size: 14,
-                              color: context.colors.textSecondary,
-                            ),
-                            const SizedBox(width: 3),
-                            Expanded(
-                              child: Text(
-                                profile.address.isEmpty
-                                    ? '내 지역 미등록 · 등록하면 이웃 요청을 받을 수 있어요'
-                                    : profile.address,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: context.colors.textSecondary,
-                                    ),
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
@@ -168,6 +145,43 @@ class MyPageScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 28),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text('설정', style: Theme.of(context).textTheme.titleMedium),
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: SoftCard(
+            onTap: () => context.push('/recording-setup'),
+            child: Row(
+              children: [
+                Icon(Icons.settings_voice_rounded, color: scheme.primary),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('통화 녹음 연결'),
+                      const SizedBox(height: 2),
+                      Text(
+                        '자동 녹음·파일 선택·폴더 스캔 관리',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: context.colors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: context.colors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: OutlinedButton.icon(
@@ -307,19 +321,7 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
             controller: _phoneController,
             textInputAction: TextInputAction.next,
           ),
-          const SizedBox(height: 12),
-          AddressField(
-            controller: _addressController,
-            label: '내 지역 (거주지)',
-            hint: '주소 검색 (도로명)',
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '내가 사는 지역이에요. 이 지역에 올라온 이웃의 도움 요청을 받아볼 수 있어요.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: context.colors.textSecondary,
-            ),
-          ),
+
           const SizedBox(height: 14),
           FilledButton(
             onPressed: _busy ? null : _save,
