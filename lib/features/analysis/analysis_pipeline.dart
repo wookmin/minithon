@@ -25,6 +25,9 @@ Future<NeedClassificationResult> runNeedAnalysis({
   Future<void> Function(ErrandRequest draft)? onErrandDraft,
 }) async {
   final result = await classifier.classify(text);
+  // 분류 실패(503·파싱 실패 등)는 기록·알림·초안 없이 그대로 반환한다.
+  // 호출자가 '처리 완료'로 표시하지 않고 재시도할 수 있게 한다.
+  if (result.failed) return result;
 
   final now = DateTime.now();
   final normalized = text.replaceAll(RegExp(r'\s+'), ' ').trim();

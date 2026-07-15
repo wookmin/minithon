@@ -116,6 +116,10 @@ class _RecordingSetupScreenState extends ConsumerState<RecordingSetupScreen> {
             ref.read(errandRequestsProvider.notifier).add(draft),
       );
       if (!mounted) return;
+      if (analysis.failed) {
+        _showMessage(analysis.reason);
+        return;
+      }
       await showModalBottomSheet<void>(
         context: context,
         showDragHandle: true,

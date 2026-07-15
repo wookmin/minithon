@@ -33,11 +33,11 @@ class FunctionsNeedClassifier implements NeedClassifier {
       });
       return _parse(payload);
     } on FirebaseFunctionsException catch (error) {
-      return NeedClassificationResult.none(
-        reason: 'Gemini 분류 실패: ${error.message ?? error.code}',
+      return NeedClassificationResult.failure(
+        'Gemini 분류 실패: ${error.message ?? error.code}',
       );
     } on Object catch (error) {
-      return NeedClassificationResult.none(reason: 'Gemini 분류 실패: $error');
+      return NeedClassificationResult.failure('Gemini 분류 실패: $error');
     }
   }
 
@@ -50,7 +50,7 @@ class FunctionsNeedClassifier implements NeedClassifier {
 
     final rawCategories = payload['categories'];
     if (rawCategories is! List) {
-      return NeedClassificationResult.none(reason: '카테고리 형식 오류');
+      return NeedClassificationResult.failure('카테고리 형식 오류');
     }
 
     final categories = rawCategories

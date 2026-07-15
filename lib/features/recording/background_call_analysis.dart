@@ -163,6 +163,12 @@ Future<void> backgroundCallAnalysisMain() async {
       onErrandDraft: (draft) =>
           container!.read(errandRequestsProvider.notifier).add(draft),
     );
+    // 분류 실패는 처리 완료로 기록하지 않는다(다음 기회에 재시도).
+    if (result.failed) {
+      debugPrint('[bg] 분류 실패(재시도 가능): ${result.reason}');
+      await notification.showAnalysisFailed(result.reason);
+      return;
+    }
     await prefs.setString(lastAnalyzedKey, matchedUri);
     await notification.cancelAnalyzing();
     debugPrint('[bg] 완료. 니즈=${result.hasActionableNeed} '
