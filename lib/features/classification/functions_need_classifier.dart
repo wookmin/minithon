@@ -22,7 +22,15 @@ class FunctionsNeedClassifier implements NeedClassifier {
     }
 
     try {
-      final payload = await invoke('classifyNeed', {'text': normalized});
+      final now = DateTime.now();
+      final today =
+          '${now.year.toString().padLeft(4, '0')}-'
+          '${now.month.toString().padLeft(2, '0')}-'
+          '${now.day.toString().padLeft(2, '0')}';
+      final payload = await invoke('classifyNeed', {
+        'text': normalized,
+        'today': today,
+      });
       return _parse(payload);
     } on FirebaseFunctionsException catch (error) {
       return NeedClassificationResult.none(
@@ -67,7 +75,16 @@ class FunctionsNeedClassifier implements NeedClassifier {
       categories: normalizedCategories,
       confidence: confidence,
       reason: reason.isEmpty ? 'Gemini 구조화 분류' : reason,
+      preferredDate: _parseDate(payload['preferredDate']),
     );
+  }
+
+  /// 서버가 준 preferredDate(YYYY-MM-DD 또는 빈 문자열)를 날짜로 해석한다.
+  DateTime? _parseDate(Object? raw) {
+    if (raw is! String) return null;
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+    return DateTime.tryParse(trimmed);
   }
 
   List<NeedCategory> _normalizeCategories(List<NeedCategory> categories) {

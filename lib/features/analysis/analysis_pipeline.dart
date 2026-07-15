@@ -64,6 +64,7 @@ Future<NeedClassificationResult> runNeedAnalysis({
           requesterUid: requesterUid,
           requesterName: requesterName,
           createdAt: now,
+          preferredDate: result.preferredDate,
         ),
       );
     }

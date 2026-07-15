@@ -38,4 +38,21 @@ void main() {
     expect(restored.helpers, isEmpty);
     expect(restored.helperCount, 0);
   });
+
+  test('preferredDate를 직렬화·역직렬화하고, 없으면 null이다', () {
+    final withDate = ErrandRequest(
+      title: '병원 동행',
+      category: '병원 동행',
+      region: '강남구',
+      distance: '부모님 지역',
+      description: 'd',
+      status: '모집중',
+      preferredDate: DateTime(2026, 7, 20),
+    );
+    final restored = ErrandRequest.fromJson(withDate.toJson());
+    expect(restored.preferredDate, DateTime(2026, 7, 20));
+
+    expect(_sample().preferredDate, isNull);
+    expect(ErrandRequest.fromJson(_sample().toJson()).preferredDate, isNull);
+  });
 }

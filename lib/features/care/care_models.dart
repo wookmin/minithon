@@ -85,6 +85,7 @@ class ErrandRequest {
     this.requesterUid = '',
     this.requesterName = '',
     this.createdAt,
+    this.preferredDate,
   });
 
   factory ErrandRequest.fromJson(Map<String, dynamic> json) {
@@ -105,6 +106,7 @@ class ErrandRequest {
       requesterUid: json['requesterUid'] as String? ?? '',
       requesterName: json['requesterName'] as String? ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
+      preferredDate: DateTime.tryParse(json['preferredDate'] as String? ?? ''),
     );
   }
 
@@ -121,6 +123,9 @@ class ErrandRequest {
   final String requesterUid;
   final String requesterName;
   final DateTime? createdAt;
+
+  /// 도움이 필요한 희망 날짜(통화 자동 추출 또는 수동 지정). 없으면 null.
+  final DateTime? preferredDate;
 
   /// 지원자 수 ([helpers]에서 파생).
   int get helperCount => helpers.length;
@@ -143,6 +148,7 @@ class ErrandRequest {
       'requesterUid': requesterUid,
       'requesterName': requesterName,
       'createdAt': createdAt?.toIso8601String(),
+      'preferredDate': preferredDate?.toIso8601String(),
     };
   }
 }
