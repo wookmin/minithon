@@ -76,22 +76,6 @@ class MyProfile {
   }
 }
 
-class CareSchedule {
-  const CareSchedule({
-    required this.title,
-    required this.category,
-    required this.dateTimeLabel,
-    required this.location,
-    required this.status,
-  });
-
-  final String title;
-  final String category;
-  final String dateTimeLabel;
-  final String location;
-  final String status;
-}
-
 class ErrandRequest {
   const ErrandRequest({
     this.id = '',

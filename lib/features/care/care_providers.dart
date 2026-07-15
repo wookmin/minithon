@@ -149,8 +149,6 @@ class RecordingSetupNotifier extends AsyncNotifier<RecordingSetupState> {
   }
 }
 
-final careSchedulesProvider = Provider<List<CareSchedule>>((ref) => const []);
-
 final errandRequestsProvider =
     AsyncNotifierProvider<ErrandRequestsNotifier, List<ErrandRequest>>(
       ErrandRequestsNotifier.new,
