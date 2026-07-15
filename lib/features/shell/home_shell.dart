@@ -33,7 +33,7 @@ class HomeShell extends StatelessWidget {
           NavigationDestination(
             icon: Icon(Icons.handyman_outlined),
             selectedIcon: Icon(Icons.handyman_rounded),
-            label: '심부름',
+            label: '해주세요',
           ),
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
@@ -85,7 +85,7 @@ class _ProductHeader extends StatelessWidget {
   String get _sectionLabel {
     switch (currentIndex) {
       case 0:
-        return '지역 심부름';
+        return '해주세요';
       case 1:
         return '홈';
       case 2:
@@ -243,9 +243,9 @@ class _QuickActionSheet extends StatelessWidget {
             onTap: () => onSelected('/my'),
           ),
           _QuickActionTile(
-            icon: Icons.campaign_rounded,
-            title: '심부름 요청',
-            subtitle: '지역 도움 요청 화면으로 이동',
+            icon: Icons.storefront_rounded,
+            title: '전문 업체 연결',
+            subtitle: '부모님 지역 전문 업체를 연결해요',
             onTap: () => onSelected('/general'),
           ),
         ],

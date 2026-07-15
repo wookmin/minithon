@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/firebase/firebase_providers.dart';
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
-import '../../core/ui/action_sheet.dart';
-import '../../core/ui/avatars.dart';
 import '../../core/ui/screen_header.dart';
-import '../../core/ui/skeleton.dart';
 import '../../core/ui/soft_card.dart';
-import '../care/care_models.dart';
+import '../business/business_providers.dart';
+import '../business/local_business.dart';
 import '../care/care_providers.dart';
 import '../care/region_matcher.dart';
 
-/// 심부름 탭의 두 모드. 할래요(내 지역 수락) / 부탁해요(내가 올린 것).
-enum _Board { accept, request }
-
+/// 해주세요 — 검색이 어려운 부모님을 대신해 지역 전문 업체를 연결한다.
 class GeneralScreen extends ConsumerStatefulWidget {
   const GeneralScreen({super.key});
 
@@ -24,281 +20,165 @@ class GeneralScreen extends ConsumerStatefulWidget {
 }
 
 class _GeneralScreenState extends ConsumerState<GeneralScreen> {
-  static const _filters = ['전체', '장보기', '수리', '병원 동행', '교통'];
+  static const _filters = ['전체', '수리', '청소', '장보기', '병원 동행', '간병'];
   String _filter = '전체';
-  _Board _board = _Board.accept;
 
   @override
   Widget build(BuildContext context) {
+    final recipients =
+        ref.watch(careRecipientsProvider).asData?.value ?? const [];
+    final parentAddress = recipients.isNotEmpty ? recipients.first.address : '';
+    final parentRegion = regionKey(parentAddress);
     final accent = context.colors.general;
+
+    final all = ref.watch(localBusinessesProvider);
+    final businesses = matchBusinesses(
+      all: all,
+      region: parentAddress,
+      category: _filter == '전체' ? null : _filter,
+    );
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 28),
       children: [
-        _boardHeader(accent),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: SegmentedButton<_Board>(
-            segments: const [
-              ButtonSegment(
-                value: _Board.accept,
-                label: Text('할래요'),
-                icon: Icon(Icons.volunteer_activism_rounded, size: 18),
-              ),
-              ButtonSegment(
-                value: _Board.request,
-                label: Text('부탁해요'),
-                icon: Icon(Icons.campaign_rounded, size: 18),
-              ),
-            ],
-            selected: {_board},
-            onSelectionChanged: (selection) =>
-                setState(() => _board = selection.first),
-          ),
+        ScreenHeader(
+          eyebrow: parentRegion.isEmpty ? '지역 상권' : parentRegion,
+          title: '해주세요',
+          subtitle: parentRegion.isEmpty
+              ? '마이에서 부모님 지역을 등록하면 그 동네 전문 업체를 연결해드려요.'
+              : '$parentRegion 전문 업체를 연결해드려요. 검색은 저희가 대신할게요.',
+          accent: accent,
         ),
         const SizedBox(height: 12),
-        if (_board == _Board.accept)
-          ..._acceptBody(accent)
-        else
-          ..._requestBody(accent),
-      ],
-    );
-  }
-
-  Widget _boardHeader(Color accent) {
-    if (_board == _Board.accept) {
-      final myRegion = regionKey(
-        ref.watch(myProfileProvider).asData?.value.address ?? '',
-      );
-      return ScreenHeader(
-        eyebrow: myRegion.isEmpty ? '생활' : myRegion,
-        title: '심부름',
-        subtitle: myRegion.isEmpty
-            ? '마이에서 내 지역을 등록하면 이웃의 도움 요청을 볼 수 있어요.'
-            : '$myRegion 이웃의 도움 요청이에요. 도울 수 있는 요청에 지원해보세요.',
-        accent: accent,
-      );
-    }
-    return ScreenHeader(
-      eyebrow: '부모님 지역',
-      title: '심부름',
-      subtitle: '내가 올린 도움 요청이에요. 날짜를 정하면 홈 일정에 표시돼요.',
-      accent: accent,
-    );
-  }
-
-  /// 할래요: 내 지역 이웃 요청 목록 + 지원.
-  List<Widget> _acceptBody(Color accent) {
-    final requests = ref.watch(myRegionErrandsProvider);
-    return [
-      SizedBox(
-        height: 40,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          children: [
-            for (final f in _filters)
-              _FilterChip(
-                label: f,
-                selected: f == _filter,
-                onTap: () => setState(() => _filter = f),
-              ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 8),
-      requests.when(
-        data: (all) {
-          final errands = _filter == '전체'
-              ? all
-              : all.where((e) => e.category == _filter).toList();
-          if (errands.isEmpty) {
-            return _EmptyState(
-              title: _filter == '전체' ? '등록된 요청이 없어요' : "'$_filter' 요청이 아직 없어요",
-              message: '요청이 올라오면 이곳에서 확인하고 지원할 수 있어요.',
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 6, 20, 2),
-                child: Text(
-                  '${errands.length}개의 요청',
-                  style: TextStyle(
-                    color: context.colors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
+              for (final f in _filters)
+                _FilterChip(
+                  label: f,
+                  selected: f == _filter,
+                  onTap: () => setState(() => _filter = f),
                 ),
-              ),
-              for (final errand in errands)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-                  child: _ErrandCard(errand: errand, accent: accent),
-                ),
-            ],
-          );
-        },
-        loading: () => const Padding(
-          padding: EdgeInsets.fromLTRB(20, 8, 20, 0),
-          child: Column(
-            children: [
-              _ErrandSkeleton(),
-              SizedBox(height: 12),
-              _ErrandSkeleton(),
-              SizedBox(height: 12),
-              _ErrandSkeleton(),
             ],
           ),
         ),
-        error: (_, _) => const _EmptyState(
-          title: '요청을 불러오지 못했어요',
-          message: '잠시 후 다시 시도해주세요.',
-        ),
-      ),
-    ];
-  }
-
-  /// 부탁해요: 검토 대기 초안 + 게시된 내 요청.
-  List<Widget> _requestBody(Color accent) {
-    final drafts = ref.watch(errandDraftsProvider).asData?.value ?? const [];
-    final posted = ref.watch(myPostedErrandsProvider);
-    return [
-      if (drafts.isNotEmpty) ...[
-        _sectionLabel('검토 대기 · 게시하면 이웃에게 보여요'),
-        for (final draft in drafts)
+        const SizedBox(height: 8),
+        if (businesses.isEmpty)
+          const _EmptyState(
+            title: '연결할 업체가 없어요',
+            message: '다른 카테고리를 선택하거나 잠시 후 다시 시도해주세요.',
+          )
+        else ...[
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-            child: _DraftCard(draft: draft, accent: accent),
+            padding: const EdgeInsets.fromLTRB(24, 6, 20, 2),
+            child: Text(
+              '${businesses.length}곳 연결 가능',
+              style: TextStyle(
+                color: context.colors.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-        const SizedBox(height: 12),
+          for (final business in businesses)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+              child: _BusinessCard(business: business, accent: accent),
+            ),
+        ],
       ],
-      posted.when(
-        data: (all) {
-          if (all.isEmpty) {
-            return drafts.isNotEmpty
-                ? const SizedBox.shrink()
-                : const _EmptyState(
-                    title: '아직 올린 요청이 없어요',
-                    message: '부모님과 통화가 분석되면 초안이 여기에 올라와요.',
-                  );
-          }
-          return Column(
-            children: [
-              _sectionLabel('게시된 요청'),
-              for (final errand in all)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-                  child: _PostedErrandCard(errand: errand, accent: accent),
-                ),
-            ],
-          );
-        },
-        loading: () => const Padding(
-          padding: EdgeInsets.fromLTRB(20, 8, 20, 0),
-          child: Column(
-            children: [
-              _ErrandSkeleton(),
-              SizedBox(height: 12),
-              _ErrandSkeleton(),
-            ],
-          ),
-        ),
-        error: (_, _) => const _EmptyState(
-          title: '요청을 불러오지 못했어요',
-          message: '잠시 후 다시 시도해주세요.',
-        ),
-      ),
-    ];
-  }
-
-  Widget _sectionLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 4, 20, 6),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          color: context.colors.textSecondary,
-        ),
-      ),
     );
   }
 }
 
-class _ErrandSkeleton extends StatelessWidget {
-  const _ErrandSkeleton();
+class _BusinessCard extends StatelessWidget {
+  const _BusinessCard({required this.business, required this.accent});
+
+  final LocalBusiness business;
+  final Color accent;
+
+  Future<void> _connect(BuildContext context) async {
+    final uri = Uri(scheme: 'tel', path: business.phone.replaceAll(' ', ''));
+    final launched = await launchUrl(uri);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('전화 연결을 시작하지 못했어요.')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const SoftCard(
+    final c = context.colors;
+    final text = Theme.of(context).textTheme;
+    return SoftCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Skeleton(width: 44, height: 44, radius: AppRadius.surface),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Skeleton(width: 86, height: 18, radius: AppRadius.pill),
-                    SizedBox(height: 8),
-                    Skeleton(width: 160, height: 16, radius: AppRadius.pill),
-                  ],
-                ),
+              _Badge(label: business.category, color: accent, soft: c.generalSoft),
+              const SizedBox(width: 8),
+              Icon(Icons.star_rounded, size: 15, color: Colors.amber.shade600),
+              const SizedBox(width: 2),
+              Text(
+                business.rating.toStringAsFixed(1),
+                style: text.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              Text(
+                '연결 수수료 ${_won(business.feeWon)}',
+                style: text.bodySmall?.copyWith(color: c.textSecondary),
               ),
             ],
           ),
-          SizedBox(height: 16),
-          Skeleton(width: double.infinity, height: 14, radius: AppRadius.pill),
-          SizedBox(height: 8),
-          Skeleton(width: 210, height: 14, radius: AppRadius.pill),
-          SizedBox(height: 16),
-          Skeleton(
+          const SizedBox(height: 8),
+          Text(
+            business.name,
+            style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            business.description,
+            style: text.bodyMedium?.copyWith(color: c.textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.place_outlined, size: 15, color: c.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                business.region,
+                style: text.bodySmall?.copyWith(color: c.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
             width: double.infinity,
-            height: 46,
-            radius: AppRadius.control,
+            child: FilledButton.icon(
+              onPressed: () => _connect(context),
+              icon: const Icon(Icons.call_rounded, size: 18),
+              label: const Text('전화 연결'),
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.title, required this.message});
-
-  final String title;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
-      child: SoftCard(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: Column(
-          children: [
-            Icon(Icons.inbox_rounded, color: c.textSecondary, size: 34),
-            const SizedBox(height: 10),
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: c.textSecondary),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _won(int value) {
+    if (value <= 0) return '무료';
+    final digits = value.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
+      buffer.write(digits[i]);
+    }
+    return '$buffer원';
   }
 }
 
@@ -343,428 +223,6 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-String _timeAgo(DateTime time) {
-  final diff = DateTime.now().difference(time);
-  if (diff.inMinutes < 1) return '방금 전';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
-  if (diff.inHours < 24) return '${diff.inHours}시간 전';
-  if (diff.inDays < 7) return '${diff.inDays}일 전';
-  final m = time.month.toString().padLeft(2, '0');
-  final d = time.day.toString().padLeft(2, '0');
-  return '${time.year}.$m.$d';
-}
-
-/// 검토 대기 초안 카드 — 통화가 만든 비공개 초안. 게시해야 공개된다.
-class _DraftCard extends ConsumerWidget {
-  const _DraftCard({required this.draft, required this.accent});
-
-  final ErrandRequest draft;
-  final Color accent;
-
-  Future<void> _publish(BuildContext context, WidgetRef ref) async {
-    try {
-      await ref.read(errandDraftsProvider.notifier).publish(draft);
-      if (!context.mounted) return;
-      await showConfirmSheet(
-        context,
-        icon: Icons.campaign_rounded,
-        title: '게시했어요',
-        message: '이웃에게 도움 요청이 전달됐어요.\n지원자가 생기면 알려드릴게요.',
-      );
-    } on Object catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('게시에 실패했어요.')));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
-    final text = Theme.of(context).textTheme;
-    final date = draft.preferredDate;
-    final meta = [
-      draft.category,
-      draft.region,
-      if (date != null) '${date.month}월 ${date.day}일',
-    ].where((value) => value.isNotEmpty).join(' · ');
-    return SoftCard(
-      color: c.generalSoft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.drafts_outlined, size: 16, color: accent),
-              const SizedBox(width: 5),
-              Text(
-                '게시 전 초안',
-                style: text.bodySmall?.copyWith(
-                  color: accent,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            draft.title,
-            style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(meta, style: text.bodySmall?.copyWith(color: c.textSecondary)),
-          if (draft.description.trim().isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              draft.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: text.bodyMedium?.copyWith(color: c.textSecondary),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => _publish(context, ref),
-                  icon: const Icon(Icons.send_rounded, size: 18),
-                  label: const Text('게시하기'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton(
-                onPressed: () =>
-                    ref.read(errandDraftsProvider.notifier).discard(draft.id),
-                child: const Text('삭제'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 부탁해요(내가 올린 요청) 카드 — 지원 현황 + 희망 날짜 지정.
-class _PostedErrandCard extends ConsumerWidget {
-  const _PostedErrandCard({required this.errand, required this.accent});
-
-  final ErrandRequest errand;
-  final Color accent;
-
-  Future<void> _pickDate(BuildContext context, WidgetRef ref) async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final initial = errand.preferredDate ?? today;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial.isBefore(today) ? today : initial,
-      firstDate: today,
-      lastDate: today.add(const Duration(days: 365)),
-    );
-    if (picked == null) return;
-    await ref
-        .read(errandRequestsProvider.notifier)
-        .setPreferredDate(errand.id, picked);
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
-    final text = Theme.of(context).textTheme;
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    final date = errand.preferredDate;
-    return SoftCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  errand.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: text.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              _StatusPill(
-                open: errand.helperCount > 0,
-                label: '지원 ${errand.helperCount}명',
-                accent: accent,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.place_outlined, size: 15, color: c.textSecondary),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  '${errand.category} · ${errand.region}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: text.bodySmall?.copyWith(color: c.textSecondary),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.event_outlined,
-                size: 16,
-                color: date != null ? accent : c.textSecondary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                date != null ? '${date.month}월 ${date.day}일' : '날짜 미정',
-                style: text.bodyMedium?.copyWith(
-                  color: date != null ? onSurface : c.textSecondary,
-                  fontWeight: date != null ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: () => _pickDate(context, ref),
-                icon: const Icon(Icons.edit_calendar_outlined, size: 18),
-                label: Text(date != null ? '날짜 변경' : '날짜 정하기'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrandCard extends ConsumerWidget {
-  const _ErrandCard({required this.errand, required this.accent});
-
-  final ErrandRequest errand;
-  final Color accent;
-
-  Future<void> _apply(BuildContext context, WidgetRef ref, String uid) async {
-    try {
-      await ref.read(errandRequestsProvider.notifier).apply(errand.id, uid);
-      if (!context.mounted) return;
-      await showConfirmSheet(
-        context,
-        icon: Icons.volunteer_activism_rounded,
-        title: '지원했어요',
-        message: '요청자에게 지원 의사를 전달했어요.\n연결되면 알림으로 알려드릴게요.',
-      );
-    } on Object catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('지원에 실패했어요. 잠시 후 다시 시도해주세요.')),
-        );
-    }
-  }
-
-  IconData get _icon {
-    switch (errand.category) {
-      case '장보기':
-        return Icons.shopping_basket_rounded;
-      case '수리':
-        return Icons.build_rounded;
-      case '병원 동행':
-        return Icons.directions_walk_rounded;
-      case '교통':
-        return Icons.directions_car_rounded;
-      default:
-        return Icons.volunteer_activism_rounded;
-    }
-  }
-
-  bool get _open => errand.status.isEmpty || errand.status == '모집중';
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
-    final text = Theme.of(context).textTheme;
-    final uid = ref.watch(currentUidProvider);
-    final applied = uid != null && errand.hasApplied(uid);
-    return SoftCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              IconTile(icon: _icon, color: accent, background: c.generalSoft),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        _Badge(
-                          label: errand.category,
-                          color: accent,
-                          soft: c.generalSoft,
-                        ),
-                        if (errand.createdAt != null) ...[
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              _timeAgo(errand.createdAt!),
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: c.textSecondary,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                        const Spacer(),
-                        _StatusPill(
-                          open: _open,
-                          label: _open ? '모집중' : errand.status,
-                          accent: accent,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      errand.title,
-                      style: text.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            errand.description,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: text.bodyMedium?.copyWith(
-              color: c.textSecondary,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Icon(Icons.place_outlined, size: 16, color: c.textSecondary),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  '${errand.region} · ${errand.distance}',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: c.textSecondary, fontSize: 13),
-                ),
-              ),
-              const Spacer(),
-              if (errand.helperCount > 0) ...[
-                AvatarStack(count: errand.helperCount, diameter: 24),
-                const SizedBox(width: 6),
-              ],
-              Text(
-                '지원 ${errand.helperCount}명',
-                style: TextStyle(
-                  color: c.textSecondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          if (errand.requesterName.trim().isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  Icons.person_outline_rounded,
-                  size: 16,
-                  color: c.textSecondary,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${errand.requesterName} 님 요청',
-                  style: TextStyle(color: c.textSecondary, fontSize: 13),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.tonalIcon(
-              onPressed: (_open && !applied && uid != null)
-                  ? () => _apply(context, ref, uid)
-                  : null,
-              icon: Icon(
-                applied
-                    ? Icons.check_rounded
-                    : Icons.volunteer_activism_rounded,
-                size: 18,
-              ),
-              label: Text(applied ? '지원함' : (_open ? '지원하기' : '마감된 요청')),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({
-    required this.open,
-    required this.label,
-    required this.accent,
-  });
-
-  final bool open;
-  final String label;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = open ? accent : context.colors.textSecondary;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Badge extends StatelessWidget {
   const _Badge({required this.label, required this.color, required this.soft});
 
@@ -786,6 +244,39 @@ class _Badge extends StatelessWidget {
           color: color,
           fontSize: 11.5,
           fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+      child: SoftCard(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Column(
+          children: [
+            Icon(Icons.storefront_outlined, color: c.textSecondary, size: 34),
+            const SizedBox(height: 10),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: c.textSecondary),
+            ),
+          ],
         ),
       ),
     );
