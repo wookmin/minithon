@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors_x.dart';
 import '../../core/theme/app_shape.dart';
+import '../../core/ui/action_sheet.dart';
 import '../../core/ui/screen_header.dart';
 import '../../core/ui/soft_card.dart';
 import '../business/business_providers.dart';
@@ -36,6 +37,7 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
     final accent = context.colors.general;
 
     final all = ref.watch(localBusinessesProvider);
+    final isDemo = ref.watch(businessesAreDemoProvider);
     final businesses = matchBusinesses(
       all: all,
       region: parentAddress,
@@ -108,7 +110,11 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
           for (final business in businesses)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-              child: _BusinessCard(business: business, accent: accent),
+              child: _BusinessCard(
+                business: business,
+                accent: accent,
+                isDemo: isDemo,
+              ),
             ),
         ],
       ],
@@ -117,12 +123,27 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
 }
 
 class _BusinessCard extends StatelessWidget {
-  const _BusinessCard({required this.business, required this.accent});
+  const _BusinessCard({
+    required this.business,
+    required this.accent,
+    required this.isDemo,
+  });
 
   final LocalBusiness business;
   final Color accent;
+  final bool isDemo;
 
   Future<void> _connect(BuildContext context) async {
+    // 더미(시연) 업체는 실제 전화 대신 데모 안내만 한다. (오연결·오해 방지)
+    if (isDemo) {
+      await showConfirmSheet(
+        context,
+        icon: Icons.info_outline_rounded,
+        title: '데모 업체예요',
+        message: '실제 제휴 업체가 아니라 시연용이에요.\n정식 버전에서는 검증된 지역 업체로 바로 연결됩니다.',
+      );
+      return;
+    }
     final uri = Uri(scheme: 'tel', path: business.phone.replaceAll(' ', ''));
     final launched = await launchUrl(uri);
     if (!launched && context.mounted) {
@@ -143,6 +164,14 @@ class _BusinessCard extends StatelessWidget {
           Row(
             children: [
               _Badge(label: business.category, color: accent, soft: c.generalSoft),
+              if (isDemo) ...[
+                const SizedBox(width: 6),
+                _Badge(
+                  label: '데모',
+                  color: c.textSecondary,
+                  soft: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+              ],
               const SizedBox(width: 8),
               Icon(Icons.star_rounded, size: 15, color: Colors.amber.shade600),
               const SizedBox(width: 2),

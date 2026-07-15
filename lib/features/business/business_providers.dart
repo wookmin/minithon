@@ -9,6 +9,10 @@ final localBusinessesProvider = Provider<List<LocalBusiness>>(
   (ref) => kDummyBusinesses,
 );
 
+/// 현재 업체 목록이 시연용 더미인지. 실제 제휴 업체(Firestore) 도입 시 false로 바꾼다.
+/// 더미일 때는 실제 전화 연결 대신 데모 안내만 한다(오연결·오해 방지).
+final businessesAreDemoProvider = Provider<bool>((ref) => true);
+
 /// 통화 니즈 → 업체 카테고리. general은 serviceType(수리/청소/장보기/교통)으로 세분한다.
 /// none은 매칭 대상이 없다.
 String? businessCategoryForNeed(NeedCategory category, {String serviceType = ''}) {
