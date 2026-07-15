@@ -132,7 +132,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             const SizedBox(height: 6),
             Text(
               '부모님 정보로 통화를 분석하고,\n주변 병원과 도움을 연결해드려요.',
-              style: text.bodyMedium?.copyWith(fontSize: 15, height: 1.5),
+              style: text.bodyMedium?.copyWith(
+                fontSize: 16,
+                height: 1.5,
+                fontWeight: FontWeight.w300,
+              ),
             ),
             const SizedBox(height: 26),
             Text('관계', style: text.titleMedium),
@@ -150,7 +154,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ],
             ),
             if (_relationship == '기타') ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextField(
                 controller: _customRelationship,
                 textInputAction: TextInputAction.next,
@@ -169,15 +173,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 hintText: '예: 홍길동',
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             PhoneNumberField(
               controller: _phone,
               textInputAction: TextInputAction.next,
               hint: '통화 녹음 매칭에 사용해요',
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             AddressField(controller: _address, hint: '주소 검색 (주변 병원에 사용)'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             FavoriteHospitalField(
               controller: _hospital,
               textInputAction: TextInputAction.done,

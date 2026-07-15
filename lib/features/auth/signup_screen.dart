@@ -74,12 +74,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final c = context.colors;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('회원가입')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
           children: [
-            const AuthBrandMark(),
+            AuthBackHeader(
+              title: '회원가입',
+              onBack: _busy ? null : () => context.go('/login'),
+            ),
             const SizedBox(height: 24),
             Text(
               '똥강아지 시작하기',
@@ -88,10 +90,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               '부모님을 함께 챙길 계정을 만들어요.',
-              style: text.bodyMedium?.copyWith(fontSize: 15),
+              style: text.bodyMedium?.copyWith(
+                fontSize: 16,
+                height: 1.5,
+                fontWeight: FontWeight.w300,
+              ),
             ),
             const SizedBox(height: 28),
             TextField(
@@ -102,7 +108,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 hintText: '홍길동',
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             TextField(
               controller: _email,
               keyboardType: TextInputType.emailAddress,
@@ -113,7 +119,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 hintText: 'name@example.com',
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             TextField(
               controller: _password,
               obscureText: true,

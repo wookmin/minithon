@@ -26,6 +26,49 @@ class AuthBrandMark extends StatelessWidget {
   }
 }
 
+/// 뒤로가기 칩 + 제목. (회원가입 등 하위 인증 화면 상단)
+class AuthBackHeader extends StatelessWidget {
+  const AuthBackHeader({super.key, required this.title, this.onBack});
+
+  final String title;
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Material(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onBack ?? () => Navigator.of(context).maybePop(),
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(
+                Icons.chevron_left_rounded,
+                color: scheme.onSurface,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// "또는" 구분선.
 class AuthDivider extends StatelessWidget {
   const AuthDivider({super.key});

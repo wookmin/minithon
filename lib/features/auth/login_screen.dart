@@ -124,7 +124,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: 6),
             Text(
               '부모님 곁을 지키러 로그인해요.',
-              style: text.bodyMedium?.copyWith(fontSize: 15),
+              style: text.bodyMedium?.copyWith(
+                fontSize: 16,
+                height: 1.5,
+                fontWeight: FontWeight.w300,
+              ),
             ),
             const SizedBox(height: 28),
             TextField(
@@ -137,7 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 hintText: 'name@example.com',
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             TextField(
               controller: _password,
               obscureText: true,
