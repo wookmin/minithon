@@ -53,10 +53,10 @@ class AvatarStack extends StatelessWidget {
   final double diameter;
 
   static const _palette = [
-    Color(0xFFC65D4B),
-    Color(0xFFB77D2A),
+    Color(0xFF2F4EFF),
+    Color(0xFFEC441E),
     Color(0xFF5A6FA6),
-    Color(0xFF2E6B4F),
+    Color(0xFF997E00),
   ];
 
   @override

@@ -24,11 +24,11 @@ class MyPageScreen extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: 28),
       children: [
-        const ScreenHeader(
+        ScreenHeader(
           eyebrow: '마이',
           title: '내 정보',
           subtitle: '대상자 정보와 분석 설정을 관리합니다.',
-          accent: Color(0xFF2E6B4F),
+          accent: scheme.primary,
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),

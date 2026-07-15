@@ -142,7 +142,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '로그인'));
     await tester.pumpAndSettle();
 
-    expect(find.text('오늘의 케어 브리핑'), findsOneWidget);
+    expect(find.text('오늘 확인할 일정'), findsOneWidget);
 
     final hospitalTab = find.descendant(
       of: find.byType(NavigationBar),
@@ -197,7 +197,7 @@ void main() {
       firestore: await _firestoreWithRecipient('signed-in-user'),
     );
 
-    expect(find.text('오늘의 케어 브리핑'), findsOneWidget);
+    expect(find.text('오늘 확인할 일정'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, '로그인'), findsNothing);
   });
 

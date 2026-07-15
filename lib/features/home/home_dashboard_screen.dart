@@ -49,24 +49,37 @@ class HomeDashboardScreen extends ConsumerWidget {
       });
     }
 
+    final recipientName = recipients.asData?.value.isNotEmpty ?? false
+        ? recipients.asData!.value.first.name
+        : '';
+
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
       children: [
         recipients.when(
           data: (items) => items.isEmpty
-              ? _AddParentCard(onTap: () => context.push('/onboarding'))
-              : _CareHero(recipient: items.first, schedules: schedules),
-          loading: () => const _LoadingCard(height: 184),
-          error: (_, _) =>
-              _AddParentCard(onTap: () => context.push('/onboarding')),
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: _AddParentCard(
+                    onTap: () => context.push('/onboarding'),
+                  ),
+                )
+              : const SizedBox.shrink(),
+          loading: () => const Padding(
+            padding: EdgeInsets.only(bottom: 20),
+            child: _LoadingCard(height: 96),
+          ),
+          error: (_, _) => Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: _AddParentCard(onTap: () => context.push('/onboarding')),
+          ),
         ),
-        const SizedBox(height: 26),
         const _SectionTitle(
           title: '오늘 확인할 일정',
           subtitle: '예약과 요청을 시간순으로 정리했어요',
         ),
         const SizedBox(height: 12),
-        _TimelineCard(schedules: schedules),
+        _ScheduleList(schedules: schedules, recipientName: recipientName),
         const SizedBox(height: 20),
         const _WelfareBanner(),
         const SizedBox(height: 26),
@@ -82,205 +95,6 @@ class HomeDashboardScreen extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _CareHero extends StatelessWidget {
-  const _CareHero({required this.recipient, required this.schedules});
-
-  final CareRecipient recipient;
-  final List<CareSchedule> schedules;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final c = context.colors;
-    final needsReview = schedules.where((s) => s.status.contains('필요')).length;
-    final nextSchedule = schedules.isEmpty ? null : schedules.first;
-    final recipientMeta = [
-      recipient.relationship,
-      if (recipient.favoriteHospital.isNotEmpty) recipient.favoriteHospital,
-    ].join(' · ');
-    return SoftCard(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: scheme.primaryContainer,
-                child: Text(
-                  recipient.name.characters.first,
-                  style: TextStyle(
-                    color: scheme.primary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${recipient.name} 님',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      recipientMeta,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: c.textSecondary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (needsReview > 0)
-                _StatusPill(
-                  label: '확인 필요 $needsReview건',
-                  color: scheme.primary,
-                ),
-            ],
-          ),
-          const SizedBox(height: 22),
-          Text(
-            '오늘의 케어 브리핑',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineMedium?.copyWith(fontSize: 24, height: 1.2),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            needsReview > 0 ? '확인이 필요한 일정이 있어요.' : '급하게 확인할 내용은 없어요.',
-            style: TextStyle(
-              color: needsReview > 0 ? scheme.primary : c.textSecondary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (nextSchedule != null)
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppRadius.surface),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.event_available_rounded,
-                    color: _scheduleColor(context, nextSchedule.category),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          nextSchedule.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${nextSchedule.dateTimeLabel} · ${nextSchedule.location}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: c.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _SoftMetric(
-                  title: '오늘 일정',
-                  value: '${schedules.length}건',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _SoftMetric(title: '확인 필요', value: '$needsReview건'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Icon(Icons.place_outlined, size: 16, color: c.textSecondary),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  recipient.address,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: c.textSecondary, fontSize: 13),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SoftMetric extends StatelessWidget {
-  const _SoftMetric({required this.title, required this.value});
-
-  final String title;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppRadius.surface),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: scheme.onSurface,
-              fontWeight: FontWeight.w800,
-              fontSize: 20,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            title,
-            style: TextStyle(
-              color: context.colors.textSecondary,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -333,7 +147,7 @@ class _WelfareBanner extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final c = context.colors;
     return Material(
-      color: const Color(0xFFEAF4FF),
+      color: c.professionalSoft,
       borderRadius: BorderRadius.circular(AppRadius.card),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -346,7 +160,7 @@ class _WelfareBanner extends StatelessWidget {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: scheme.surface,
                   borderRadius: BorderRadius.circular(AppRadius.surface),
                 ),
                 child: Icon(
@@ -420,101 +234,128 @@ Color _scheduleColor(BuildContext context, String category) {
   }
 }
 
-class _TimelineCard extends StatelessWidget {
-  const _TimelineCard({required this.schedules});
+class _ScheduleList extends StatelessWidget {
+  const _ScheduleList({required this.schedules, required this.recipientName});
 
   final List<CareSchedule> schedules;
+  final String recipientName;
 
   @override
   Widget build(BuildContext context) {
     if (schedules.isEmpty) {
-      return SoftCard(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: Row(
-          children: [
-            Icon(
-              Icons.event_available_rounded,
-              color: context.colors.textSecondary,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '예정된 일정이 없어요.\n통화 분석이나 요청이 생기면 여기에 표시돼요.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(height: 1.4),
-              ),
-            ),
-          ],
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
+        child: Text(
+          '예정된 일정이 없어요.\n통화 분석이나 요청이 생기면 여기에 표시돼요.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
         ),
       );
     }
-    return SoftCard(
-      child: Column(
-        children: [
-          for (var i = 0; i < schedules.length; i++)
-            _TimelineRow(
-              schedule: schedules[i],
-              isLast: i == schedules.length - 1,
-            ),
+    return Column(
+      children: [
+        for (var i = 0; i < schedules.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          _ScheduleCard(schedule: schedules[i], recipientName: recipientName),
         ],
-      ),
+      ],
     );
   }
 }
 
-class _TimelineRow extends StatelessWidget {
-  const _TimelineRow({required this.schedule, required this.isLast});
+class _ScheduleCard extends StatelessWidget {
+  const _ScheduleCard({required this.schedule, required this.recipientName});
 
   final CareSchedule schedule;
-  final bool isLast;
+  final String recipientName;
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final color = _scheduleColor(context, schedule.category);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
+    final parts = schedule.dateTimeLabel.split(' ');
+    final day = parts.isNotEmpty ? parts.first : '';
+    final time = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    final who = recipientName.isEmpty ? '' : '$recipientName 님 · ';
+
+    return SoftCard(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 11,
-              height: 11,
-              margin: const EdgeInsets.only(top: 3),
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            SizedBox(
+              width: 54,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    day,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: c.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    time,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            if (!isLast)
-              Container(width: 2, height: 56, color: context.colors.hairline),
+            const SizedBox(width: 14),
+            Container(width: 1, color: c.hairline),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    schedule.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    '$who${schedule.location}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w300,
+                      color: c.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            _StatusPill(label: schedule.status, color: color),
+            const SizedBox(width: 2),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: c.textSecondary,
+            ),
           ],
         ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        schedule.title,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    _StatusPill(label: schedule.status, color: color),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '${schedule.dateTimeLabel} · ${schedule.location}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -565,9 +406,9 @@ class _DetectedNeedStrip extends ConsumerWidget {
           final visual = categoryVisual(context, record.primaryCategory);
           final route = routeForCategory(record.primaryCategory);
           return _DetectedNeedCard(
+            label: visual.label,
             title: record.reason.isEmpty ? visual.tagline : record.reason,
-            subtitle: '${visual.label} · ${record.relativeTime(now)}',
-            icon: visual.icon,
+            meta: record.relativeTime(now),
             color: visual.color,
             soft: visual.soft,
             onTap: route == null ? () {} : () => context.go(route),
@@ -580,23 +421,24 @@ class _DetectedNeedStrip extends ConsumerWidget {
 
 class _DetectedNeedCard extends StatelessWidget {
   const _DetectedNeedCard({
+    required this.label,
     required this.title,
-    required this.subtitle,
-    required this.icon,
+    required this.meta,
     required this.color,
     required this.soft,
     required this.onTap,
   });
 
+  final String label;
   final String title;
-  final String subtitle;
-  final IconData icon;
+  final String meta;
   final Color color;
   final Color soft;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: 180,
       child: SoftCard(
@@ -605,31 +447,55 @@ class _DetectedNeedCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 42,
-              height: 42,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: soft,
-                borderRadius: BorderRadius.circular(AppRadius.surface),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
-              child: Icon(icon, color: color, size: 22),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
-            const Spacer(),
+            const SizedBox(height: 12),
             Text(
               title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-                height: 1.25,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                height: 1.28,
               ),
             ),
-            const SizedBox(height: 3),
-            Text(
-              subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium,
+            const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    meta,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w300,
+                      color: context.colors.textSecondary,
+                    ),
+                  ),
+                ),
+                Text(
+                  '바로 확인 →',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.primary,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -121,7 +121,7 @@ class _HospitalScreenState extends ConsumerState<HospitalScreen> {
                   for (final f in _filters)
                     _FilterChip(
                       label: f,
-                      accent: accent,
+                      accent: Theme.of(context).colorScheme.primary,
                       selected: f == _filter,
                       onTap: () => setState(() => _filter = f),
                     ),
