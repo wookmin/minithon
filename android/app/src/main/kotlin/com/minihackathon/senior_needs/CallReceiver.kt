@@ -4,9 +4,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
+import androidx.work.BackoffPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.WorkRequest
 import androidx.work.workDataOf
 import java.util.concurrent.TimeUnit
 
@@ -39,6 +41,11 @@ class CallReceiver : BroadcastReceiver() {
         val request = OneTimeWorkRequestBuilder<CallAnalysisWorker>()
             .setInitialDelay(RECORDING_WRITE_DELAY_SECONDS, TimeUnit.SECONDS)
             .setInputData(workDataOf(KEY_CALL_ENDED_AT to callEndedAt))
+            .setBackoffCriteria(
+                BackoffPolicy.EXPONENTIAL,
+                WorkRequest.MIN_BACKOFF_MILLIS,
+                TimeUnit.MILLISECONDS,
+            )
             .build()
         // 중복 broadcast로 인한 중복 분석을 막기 위해 유니크 워크(KEEP)로 예약한다.
         WorkManager.getInstance(context.applicationContext)

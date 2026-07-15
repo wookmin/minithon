@@ -34,6 +34,7 @@ Future<void> backgroundCallAnalysisMain() async {
   final notification = NotificationService(FlutterLocalNotificationsPlugin());
   ProviderContainer? container;
   var analyzingShown = false;
+  var retryNeeded = false;
   try {
     await Firebase.initializeApp();
     // 저장된 로그인 세션이 복원될 때까지 대기(없으면 null로 진행 → 대상자 없음 처리).
@@ -152,7 +153,8 @@ Future<void> backgroundCallAnalysisMain() async {
         .read(audioTranscriptionServiceProvider)
         .transcribe(bytes: bytes, mimeType: _mimeForName(matched.fileName));
     if (!stt.isSuccess) {
-      debugPrint('[bg] STT 실패: ${stt.error}');
+      debugPrint('[bg] STT 실패(재시도 가능): ${stt.error}');
+      retryNeeded = true;
       await notification.showAnalysisFailed(stt.error ?? '전사에 실패했어요.');
       return;
     }
@@ -170,6 +172,7 @@ Future<void> backgroundCallAnalysisMain() async {
     // 분류 실패는 처리 완료로 기록하지 않는다(다음 기회에 재시도).
     if (result.failed) {
       debugPrint('[bg] 분류 실패(재시도 가능): ${result.reason}');
+      retryNeeded = true;
       await notification.showAnalysisFailed(result.reason);
       return;
     }
@@ -179,6 +182,7 @@ Future<void> backgroundCallAnalysisMain() async {
         '카테고리=${result.categories.map((c) => c.name).toList()}');
   } on Object catch (error) {
     debugPrint('[bg] 백그라운드 통화 분석 실패: $error');
+    retryNeeded = true;
     if (analyzingShown) {
       try {
         await notification.showAnalysisFailed('$error');
@@ -188,7 +192,7 @@ Future<void> backgroundCallAnalysisMain() async {
     container?.dispose();
     // 네이티브가 임시파일 정리 + 엔진 종료하도록 완료 신호.
     try {
-      await channel.invokeMethod('done');
+      await channel.invokeMethod('done', {'retry': retryNeeded});
     } on Object catch (_) {}
   }
 }
