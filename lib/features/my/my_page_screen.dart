@@ -62,6 +62,30 @@ class MyPageScreen extends ConsumerWidget {
                               : profile.phoneNumber,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.place_outlined,
+                              size: 14,
+                              color: context.colors.textSecondary,
+                            ),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                profile.address.isEmpty
+                                    ? '내 지역 미등록 · 등록하면 이웃 요청을 받을 수 있어요'
+                                    : profile.address,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: context.colors.textSecondary,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -199,6 +223,7 @@ class _MyProfileFormSheet extends ConsumerStatefulWidget {
 class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
+  late final TextEditingController _addressController;
   bool _busy = false;
 
   @override
@@ -206,12 +231,14 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
     super.initState();
     _nameController = TextEditingController(text: widget.profile.name);
     _phoneController = TextEditingController(text: widget.profile.phoneNumber);
+    _addressController = TextEditingController(text: widget.profile.address);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -219,10 +246,11 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
     if (_busy) return;
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
-    if ([name, phone].any((value) => value.isEmpty)) {
+    final address = _addressController.text.trim();
+    if ([name, phone, address].any((value) => value.isEmpty)) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('모든 정보를 입력해주세요.')));
+        ..showSnackBar(const SnackBar(content: Text('이름·전화번호·내 지역을 모두 입력해주세요.')));
       return;
     }
 
@@ -230,7 +258,7 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
     try {
       await ref
           .read(myProfileProvider.notifier)
-          .save(MyProfile(name: name, phoneNumber: phone));
+          .save(MyProfile(name: name, phoneNumber: phone, address: address));
       if (mounted) Navigator.of(context).pop();
     } on Object catch (error) {
       if (mounted) {
@@ -276,7 +304,20 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
           _Field(controller: _nameController, label: '이름'),
           PhoneNumberField(
             controller: _phoneController,
-            textInputAction: TextInputAction.done,
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 12),
+          AddressField(
+            controller: _addressController,
+            label: '내 지역 (거주지)',
+            hint: '주소 검색 (도로명)',
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '내가 사는 지역이에요. 이 지역에 올라온 이웃의 도움 요청을 받아볼 수 있어요.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: context.colors.textSecondary,
+            ),
           ),
           const SizedBox(height: 14),
           FilledButton(

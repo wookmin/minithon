@@ -43,20 +43,36 @@ class CareRecipient {
 }
 
 class MyProfile {
-  const MyProfile({required this.name, required this.phoneNumber});
+  const MyProfile({
+    required this.name,
+    required this.phoneNumber,
+    this.address = '',
+  });
 
   factory MyProfile.fromJson(Map<String, dynamic> json) {
     return MyProfile(
       name: json['name'] as String? ?? '',
       phoneNumber: json['phoneNumber'] as String? ?? '',
+      address: json['address'] as String? ?? '',
     );
   }
 
   final String name;
   final String phoneNumber;
 
+  /// 내 거주지 주소. 이 지역의 구인글을 수락(지원)할 수 있다. (부모 지역과 구분)
+  final String address;
+
+  MyProfile copyWith({String? name, String? phoneNumber, String? address}) {
+    return MyProfile(
+      name: name ?? this.name,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      address: address ?? this.address,
+    );
+  }
+
   Map<String, dynamic> toJson() {
-    return {'name': name, 'phoneNumber': phoneNumber};
+    return {'name': name, 'phoneNumber': phoneNumber, 'address': address};
   }
 }
 

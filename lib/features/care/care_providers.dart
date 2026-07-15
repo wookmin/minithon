@@ -74,6 +74,7 @@ class MyProfileNotifier extends AsyncNotifier<MyProfile> {
           return MyProfile(
             name: savedName.isNotEmpty ? savedName : authProfile.name,
             phoneNumber: saved.phoneNumber,
+            address: saved.address,
           );
         }
       } on Object {
