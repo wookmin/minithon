@@ -183,6 +183,18 @@ class ErrandRequestsNotifier extends AsyncNotifier<List<ErrandRequest>> {
     await future;
   }
 
+  /// 부탁해요의 희망 날짜를 지정/변경한다. null이면 미정으로 되돌린다.
+  Future<void> setPreferredDate(String errandId, DateTime? date) async {
+    if (errandId.isEmpty) return;
+    await ref
+        .read(firebaseFirestoreProvider)
+        .collection(FirestorePaths.errands)
+        .doc(errandId)
+        .update({'preferredDate': date?.toIso8601String()});
+    ref.invalidateSelf();
+    await future;
+  }
+
   /// 도움 요청에 지원한다. 같은 uid의 중복 지원은 arrayUnion으로 자연히 무시된다.
   Future<void> apply(String errandId, String uid) async {
     if (errandId.isEmpty || uid.isEmpty) return;
