@@ -7,6 +7,7 @@ import '../../core/firebase/firestore_paths.dart';
 import '../../core/firebase/firebase_providers.dart';
 import '../auth/auth_providers.dart';
 import 'care_models.dart';
+import 'region_matcher.dart';
 
 const _recordingSetupKey = 'recordingSetupState';
 const _myProfileKey = 'myProfile';
@@ -183,3 +184,24 @@ class ErrandRequestsNotifier extends AsyncNotifier<List<ErrandRequest>> {
     await future;
   }
 }
+
+/// 내 거주지 지역에 올라온, 남이 올린 도움 요청. (지원/수락 대상)
+/// 내 지역이 미등록이면 빈 목록 → 화면에서 등록을 안내한다.
+final myRegionErrandsProvider = FutureProvider<List<ErrandRequest>>((ref) async {
+  final all = await ref.watch(errandRequestsProvider.future);
+  final me = await ref.watch(myProfileProvider.future);
+  final uid = ref.watch(currentUidProvider);
+  if (regionKey(me.address).isEmpty) return const [];
+  return all
+      .where((request) => request.requesterUid != uid)
+      .where((request) => sameRegion(request.region, me.address))
+      .toList();
+});
+
+/// 내가 올린 도움 요청. (부모 지역에 올린 것 — 상태·지원자 관리용)
+final myPostedErrandsProvider = FutureProvider<List<ErrandRequest>>((ref) async {
+  final all = await ref.watch(errandRequestsProvider.future);
+  final uid = ref.watch(currentUidProvider);
+  if (uid == null || uid.isEmpty) return const [];
+  return all.where((request) => request.requesterUid == uid).toList();
+});

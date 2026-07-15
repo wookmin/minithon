@@ -11,6 +11,7 @@ import '../../core/ui/skeleton.dart';
 import '../../core/ui/soft_card.dart';
 import '../care/care_models.dart';
 import '../care/care_providers.dart';
+import '../care/region_matcher.dart';
 
 class GeneralScreen extends ConsumerStatefulWidget {
   const GeneralScreen({super.key});
@@ -25,16 +26,20 @@ class _GeneralScreenState extends ConsumerState<GeneralScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final requests = ref.watch(errandRequestsProvider);
+    final requests = ref.watch(myRegionErrandsProvider);
+    final myAddress = ref.watch(myProfileProvider).asData?.value.address ?? '';
+    final myRegion = regionKey(myAddress);
     final accent = context.colors.general;
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 28),
       children: [
         ScreenHeader(
-          eyebrow: '생활',
-          title: '지역 심부름',
-          subtitle: '가까운 생활 도움과 이동 요청을 확인하세요.',
+          eyebrow: myRegion.isEmpty ? '생활' : myRegion,
+          title: '내 지역 도움 요청',
+          subtitle: myRegion.isEmpty
+              ? '마이에서 내 지역을 등록하면 이웃의 도움 요청을 볼 수 있어요.'
+              : '$myRegion 이웃의 도움 요청이에요. 도울 수 있는 요청에 지원해보세요.',
           accent: accent,
         ),
         Padding(
