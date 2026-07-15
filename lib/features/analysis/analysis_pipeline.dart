@@ -37,6 +37,7 @@ Future<NeedClassificationResult> runNeedAnalysis({
       createdAt: now,
       recipientName: recipientName,
       recipientRegion: recipientRegion,
+      serviceType: result.serviceType,
       callTime: callTime ?? now,
       categories: result.categories,
       reason: result.reason,

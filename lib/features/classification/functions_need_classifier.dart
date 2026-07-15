@@ -76,6 +76,7 @@ class FunctionsNeedClassifier implements NeedClassifier {
       confidence: confidence,
       reason: reason.isEmpty ? 'Gemini 구조화 분류' : reason,
       preferredDate: _parseDate(payload['preferredDate']),
+      serviceType: (payload['serviceType'] as String?)?.trim() ?? '',
     );
   }
 

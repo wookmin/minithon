@@ -17,6 +17,14 @@ export const NEED_PROMPT = `너는 부모님과 자녀의 통화 텍스트에서
 - JSON 이외의 설명, 마크다운, 코드블록을 절대 출력하지 않는다.
 - reason은 한국어로 짧게 작성한다.
 
+서비스 유형(serviceType):
+- general(생활 심부름)일 때 구체 유형을 아래 중 하나로 지정한다.
+  - repair: 전등·수도·가전·가구·보일러 등 고장 수리
+  - cleaning: 청소·정리·환기
+  - shopping: 장보기·생필품 구매·배달
+  - transport: 이동·교통 지원(병원 외)
+- general이 아니거나 판단이 애매하면 "none"으로 둔다.
+
 날짜 규칙:
 - preferredDate: 통화에서 도움이 필요한 구체적 날짜/시점이 언급되면 YYYY-MM-DD 형식으로 반환한다.
 - "내일", "모레", "다음 주 화요일", "이번 주말", "3일 뒤" 같은 상대 표현은 입력으로 주어지는 '오늘 날짜'를 기준으로 계산한다.
@@ -43,14 +51,31 @@ export const NEED_SCHEMA = {
       description: "Confidence from 0 to 1.",
     },
     reason: {type: "STRING", description: "A brief Korean reason."},
+    serviceType: {
+      type: "STRING",
+      enum: ["repair", "cleaning", "shopping", "transport", "none"],
+      description: "Sub-type for general needs; none otherwise.",
+    },
     preferredDate: {
       type: "STRING",
       description:
         "Requested date as YYYY-MM-DD, or empty string if none/ambiguous.",
     },
   },
-  required: ["categories", "confidence", "reason", "preferredDate"],
-  propertyOrdering: ["categories", "confidence", "reason", "preferredDate"],
+  required: [
+    "categories",
+    "confidence",
+    "reason",
+    "serviceType",
+    "preferredDate",
+  ],
+  propertyOrdering: [
+    "categories",
+    "confidence",
+    "reason",
+    "serviceType",
+    "preferredDate",
+  ],
 };
 
 export const GEMINI_MODEL = "gemini-2.5-flash-lite";

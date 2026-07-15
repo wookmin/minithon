@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:senior_needs/features/business/business_providers.dart';
 import 'package:senior_needs/features/business/local_business.dart';
+import 'package:senior_needs/features/classification/need_category.dart';
 
 const _all = [
   LocalBusiness(
@@ -36,6 +37,30 @@ const _all = [
 ];
 
 void main() {
+  group('businessCategoryForNeed', () {
+    test('general은 serviceType으로 세분한다', () {
+      expect(
+        businessCategoryForNeed(NeedCategory.general, serviceType: 'repair'),
+        '수리',
+      );
+      expect(
+        businessCategoryForNeed(NeedCategory.general, serviceType: 'cleaning'),
+        '청소',
+      );
+      expect(
+        businessCategoryForNeed(NeedCategory.general, serviceType: 'transport'),
+        '교통',
+      );
+      expect(businessCategoryForNeed(NeedCategory.general), '장보기');
+    });
+
+    test('hospital·professional은 고정, none은 null', () {
+      expect(businessCategoryForNeed(NeedCategory.hospital), '병원 동행');
+      expect(businessCategoryForNeed(NeedCategory.professional), '간병');
+      expect(businessCategoryForNeed(NeedCategory.none), isNull);
+    });
+  });
+
   test('같은 지역 + 카테고리로 좁힌다', () {
     final result = matchBusinesses(
       all: _all,

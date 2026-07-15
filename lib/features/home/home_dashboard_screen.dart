@@ -116,7 +116,10 @@ class _RecommendationStrip extends ConsumerWidget {
 
   LocalBusiness? _pick(List<LocalBusiness> all, AnalysisRecord record) {
     for (final category in record.categories) {
-      final biz = businessCategoryForNeed(category);
+      final biz = businessCategoryForNeed(
+        category,
+        serviceType: record.serviceType,
+      );
       if (biz == null) continue;
       final matched = matchBusinesses(
         all: all,

@@ -74,6 +74,7 @@ export const classifyNeed = onCall(
         categories: ["none"],
         confidence: 1,
         reason: "빈 텍스트",
+        serviceType: "none",
         preferredDate: "",
       };
     }

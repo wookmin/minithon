@@ -9,15 +9,26 @@ final localBusinessesProvider = Provider<List<LocalBusiness>>(
   (ref) => kDummyBusinesses,
 );
 
-/// 통화 니즈 카테고리 → 업체 카테고리. none은 매칭 대상이 없다.
-String? businessCategoryForNeed(NeedCategory category) {
+/// 통화 니즈 → 업체 카테고리. general은 serviceType(수리/청소/장보기/교통)으로 세분한다.
+/// none은 매칭 대상이 없다.
+String? businessCategoryForNeed(NeedCategory category, {String serviceType = ''}) {
   switch (category) {
     case NeedCategory.hospital:
       return '병원 동행';
     case NeedCategory.professional:
       return '간병';
     case NeedCategory.general:
-      return '장보기';
+      switch (serviceType) {
+        case 'repair':
+          return '수리';
+        case 'cleaning':
+          return '청소';
+        case 'transport':
+          return '교통';
+        case 'shopping':
+        default:
+          return '장보기';
+      }
     case NeedCategory.none:
       return null;
   }

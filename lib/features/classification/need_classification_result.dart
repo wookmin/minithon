@@ -7,6 +7,7 @@ class NeedClassificationResult {
     required this.reason,
     this.preferredDate,
     this.failed = false,
+    this.serviceType = '',
   });
 
   factory NeedClassificationResult.none({String reason = '분류 가능한 니즈 없음'}) {
@@ -37,6 +38,9 @@ class NeedClassificationResult {
 
   /// 분류가 실패했는지. true면 니즈 없음이 아니라 '판단 불가'다.
   final bool failed;
+
+  /// general 니즈의 세부 유형(repair/cleaning/shopping/transport). 없으면 빈 값.
+  final String serviceType;
 
   bool get hasActionableNeed =>
       categories.any((category) => category != NeedCategory.none);
