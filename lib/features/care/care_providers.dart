@@ -10,8 +10,10 @@ import '../auth/auth_providers.dart';
 import 'care_models.dart';
 import 'region_matcher.dart';
 
-const _recordingSetupKey = 'recordingSetupState';
-const _myProfileKey = 'myProfile';
+// 로컬 캐시 키는 UID별로 분리해, 같은 기기에서 계정을 바꿔도
+// 이전 사용자의 프로필·설정이 노출되지 않게 한다.
+String _myProfileKey(String? uid) => 'myProfile_${uid ?? 'anon'}';
+String _recordingSetupKey(String? uid) => 'recordingSetupState_${uid ?? 'anon'}';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>(
   (ref) => throw UnimplementedError('SharedPreferences override is required'),
@@ -65,7 +67,8 @@ class MyProfileNotifier extends AsyncNotifier<MyProfile> {
   @override
   Future<MyProfile> build() async {
     final prefs = ref.watch(sharedPreferencesProvider);
-    final source = prefs.getString(_myProfileKey);
+    final uid = ref.watch(currentUidProvider);
+    final source = prefs.getString(_myProfileKey(uid));
     final authProfile = _profileFromAuth();
     if (source != null && source.isNotEmpty) {
       try {
@@ -98,7 +101,8 @@ class MyProfileNotifier extends AsyncNotifier<MyProfile> {
   Future<void> save(MyProfile profile) async {
     state = AsyncData(profile);
     final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setString(_myProfileKey, jsonEncode(profile.toJson()));
+    final uid = ref.read(currentUidProvider);
+    await prefs.setString(_myProfileKey(uid), jsonEncode(profile.toJson()));
   }
 }
 
@@ -111,7 +115,8 @@ class RecordingSetupNotifier extends AsyncNotifier<RecordingSetupState> {
   @override
   Future<RecordingSetupState> build() async {
     final prefs = ref.watch(sharedPreferencesProvider);
-    final source = prefs.getString(_recordingSetupKey);
+    final uid = ref.watch(currentUidProvider);
+    final source = prefs.getString(_recordingSetupKey(uid));
     if (source == null || source.isEmpty) {
       return const RecordingSetupState.incomplete();
     }
@@ -145,7 +150,8 @@ class RecordingSetupNotifier extends AsyncNotifier<RecordingSetupState> {
   Future<void> _persist(RecordingSetupState next) async {
     state = AsyncData(next);
     final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setString(_recordingSetupKey, jsonEncode(next.toJson()));
+    final uid = ref.read(currentUidProvider);
+    await prefs.setString(_recordingSetupKey(uid), jsonEncode(next.toJson()));
   }
 }
 
