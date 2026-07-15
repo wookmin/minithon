@@ -321,7 +321,12 @@ class _MyProfileFormSheetState extends ConsumerState<_MyProfileFormSheet> {
             controller: _phoneController,
             textInputAction: TextInputAction.next,
           ),
-
+          const SizedBox(height: 12),
+          AddressField(
+            controller: _addressController,
+            label: '내 지역 (거주지)',
+            hint: '주소 검색 (도로명)',
+          ),
           const SizedBox(height: 14),
           FilledButton(
             onPressed: _busy ? null : _save,
