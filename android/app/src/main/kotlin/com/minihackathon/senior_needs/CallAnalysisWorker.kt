@@ -26,6 +26,7 @@ class CallAnalysisWorker(context: Context, params: WorkerParameters) :
     Worker(context, params) {
 
     override fun doWork(): Result {
+        val callEndedAt = inputData.getLong(CallReceiver.KEY_CALL_ENDED_AT, 0L)
         val recordings = RecordingStore.recent(applicationContext, RECENT_LIMIT)
         if (recordings.isEmpty()) return Result.success()
 
@@ -57,7 +58,12 @@ class CallAnalysisWorker(context: Context, params: WorkerParameters) :
                                 "dateAdded" to it.dateAdded,
                             )
                         }
-                        result.success(mapOf("recordings" to list))
+                        result.success(
+                            mapOf(
+                                "recordings" to list,
+                                "callEndedAt" to callEndedAt,
+                            ),
+                        )
                     }
                     "readBytes" -> {
                         val uri = call.argument<String>("uri")

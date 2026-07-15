@@ -4,6 +4,61 @@ import 'package:senior_needs/features/recording/recording_candidate.dart';
 import 'package:senior_needs/features/recording/recording_matcher.dart';
 
 void main() {
+  group('isRecordingForCall', () {
+    const callEnded = 1000000000000; // 기준 통화 종료 시각(ms)
+
+    test('통화 종료 직전(통화 중) 생성 녹음은 후보다', () {
+      expect(
+        isRecordingForCall(
+          recordingEpochMs: callEnded - 60 * 1000,
+          callEndedEpochMs: callEnded,
+        ),
+        isTrue,
+      );
+    });
+
+    test('통화 종료 직후 버퍼 안이면 후보다', () {
+      expect(
+        isRecordingForCall(
+          recordingEpochMs: callEnded + 2 * 60 * 1000,
+          callEndedEpochMs: callEnded,
+        ),
+        isTrue,
+      );
+    });
+
+    test('버퍼보다 늦게 생성됐으면 제외한다', () {
+      expect(
+        isRecordingForCall(
+          recordingEpochMs: callEnded + 10 * 60 * 1000,
+          callEndedEpochMs: callEnded,
+        ),
+        isFalse,
+      );
+    });
+
+    test('오래된(어제) 녹음은 제외한다', () {
+      expect(
+        isRecordingForCall(
+          recordingEpochMs: callEnded - 24 * 3600 * 1000,
+          callEndedEpochMs: callEnded,
+        ),
+        isFalse,
+      );
+    });
+
+    test('시각을 알 수 없으면(0) 필터하지 않는다', () {
+      expect(
+        isRecordingForCall(recordingEpochMs: 0, callEndedEpochMs: callEnded),
+        isTrue,
+      );
+      expect(
+        isRecordingForCall(recordingEpochMs: callEnded, callEndedEpochMs: 0),
+        isTrue,
+      );
+    });
+  });
+
   const matcher = RecordingMatcher();
   const recipients = [
     CareRecipient(

@@ -7,6 +7,7 @@ import android.telephony.TelephonyManager
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.workDataOf
 import java.util.concurrent.TimeUnit
 
 /**
@@ -33,8 +34,11 @@ class CallReceiver : BroadcastReceiver() {
 
     /** 녹음이 저장·색인될 시간을 준 뒤 백그라운드 분석을 실행한다. */
     private fun scheduleBackgroundAnalysis(context: Context) {
+        // 통화가 끝난 시각(ms). 녹음 생성 시각과 비교해 과거 녹음 오분석을 막는다.
+        val callEndedAt = System.currentTimeMillis()
         val request = OneTimeWorkRequestBuilder<CallAnalysisWorker>()
             .setInitialDelay(RECORDING_WRITE_DELAY_SECONDS, TimeUnit.SECONDS)
+            .setInputData(workDataOf(KEY_CALL_ENDED_AT to callEndedAt))
             .build()
         // 중복 broadcast로 인한 중복 분석을 막기 위해 유니크 워크(KEEP)로 예약한다.
         WorkManager.getInstance(context.applicationContext)
@@ -42,6 +46,7 @@ class CallReceiver : BroadcastReceiver() {
     }
 
     companion object {
+        const val KEY_CALL_ENDED_AT = "callEndedAt"
         private var sawCall = false
         private const val RECORDING_WRITE_DELAY_SECONDS = 8L
         private const val WORK_NAME = "call_analysis"

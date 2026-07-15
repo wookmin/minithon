@@ -61,7 +61,8 @@ Future<void> backgroundCallAnalysisMain() async {
     // 네이티브가 최근 녹음 메타데이터(바이트 제외)를 넘긴다.
     final pending = await channel.invokeMapMethod<String, dynamic>('getPending');
     final rawList = (pending?['recordings'] as List?) ?? const [];
-    debugPrint('[bg] 최근 녹음 ${rawList.length}건 수신');
+    final callEndedAt = (pending?['callEndedAt'] as num?)?.toInt() ?? 0;
+    debugPrint('[bg] 최근 녹음 ${rawList.length}건 수신 (통화종료=$callEndedAt)');
     if (rawList.isEmpty) return;
 
     final recipients = await container.read(careRecipientsProvider.future);
@@ -85,6 +86,14 @@ Future<void> backgroundCallAnalysisMain() async {
       final name = item['name'] as String? ?? '';
       final relativePath = item['relativePath'] as String? ?? '';
       final uri = item['uri'] as String? ?? '';
+      // 통화 종료 시각과 동떨어진(과거) 녹음은 이름·전화가 맞아도 건너뛴다.
+      final dateAddedSec = (item['dateAdded'] as num?)?.toInt() ?? 0;
+      if (!isRecordingForCall(
+        recordingEpochMs: dateAddedSec * 1000,
+        callEndedEpochMs: callEndedAt,
+      )) {
+        continue;
+      }
       final candidate = matcher.match(
         filePath: '$relativePath$name',
         displayName: name,
