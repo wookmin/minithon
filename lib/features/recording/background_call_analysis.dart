@@ -101,6 +101,10 @@ Future<void> backgroundCallAnalysisMain() async {
         contentUri: uri,
         sourceType: RecordingImportSourceType.background,
         recipients: recipients,
+        // 녹음 생성 시각을 통화 시각으로 사용(기록에 분석 시각 대신 실제 통화 시각).
+        createdAt: dateAddedSec > 0
+            ? DateTime.fromMillisecondsSinceEpoch(dateAddedSec * 1000)
+            : null,
       );
       if (candidate.isMatched) {
         matchedUri = uri;
