@@ -28,6 +28,11 @@ class FavoriteHospitalField extends StatelessWidget {
         hintText: '없으면 비워둬도 돼요',
         helperText: '등록하면 병원 화면에서 먼저 떠올릴 수 있어요.',
         prefixIcon: Icon(Icons.local_hospital_outlined, color: c.health),
+        constraints: const BoxConstraints(minHeight: 60),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 17,
+        ),
         filled: true,
         fillColor: scheme.surfaceContainerHighest,
         border: OutlineInputBorder(

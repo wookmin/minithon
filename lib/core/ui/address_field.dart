@@ -17,9 +17,9 @@ class AddressField extends StatelessWidget {
 
   Future<void> _search(BuildContext context) async {
     FocusScope.of(context).unfocus();
-    final result = await Navigator.of(context).push<Kpostal>(
-      MaterialPageRoute(builder: (_) => KpostalView()),
-    );
+    final result = await Navigator.of(
+      context,
+    ).push<Kpostal>(MaterialPageRoute(builder: (_) => KpostalView()));
     if (result != null) controller.text = result.address;
   }
 
@@ -33,6 +33,11 @@ class AddressField extends StatelessWidget {
         labelText: label,
         hintText: hint,
         suffixIcon: const Icon(Icons.search_rounded),
+        constraints: const BoxConstraints(minHeight: 60),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 17,
+        ),
       ),
     );
   }

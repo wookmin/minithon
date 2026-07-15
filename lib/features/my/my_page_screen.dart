@@ -171,6 +171,7 @@ class MyPageScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: true,
       builder: (context) => _RecipientFormSheet(recipient: recipient),
     );
   }
@@ -556,77 +557,81 @@ class _RecipientFormSheetState extends ConsumerState<_RecipientFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 22,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 18),
-              decoration: BoxDecoration(
-                color: context.colors.hairline,
-                borderRadius: BorderRadius.circular(2),
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.86;
+
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(20, 4, 20, bottomInset + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.recipient == null ? '대상자 추가' : '대상자 수정',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-            ),
-          ),
-          Text(
-            widget.recipient == null ? '대상자 추가' : '대상자 수정',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          _Field(controller: _nameController, label: '이름'),
-          PhoneNumberField(
-            controller: _phoneController,
-            textInputAction: TextInputAction.next,
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: _relationship,
-            decoration: const InputDecoration(labelText: '나와의 관계'),
-            items: [
-              for (final option in _relationshipOptions)
-                DropdownMenuItem(value: option, child: Text(option)),
-            ],
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() => _relationship = value);
-            },
-          ),
-          const SizedBox(height: 10),
-          if (_relationship == '기타') ...[
-            _Field(
-              controller: _customRelationshipController,
-              label: '관계 직접 입력',
-            ),
-            const SizedBox(height: 2),
-          ],
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: AddressField(controller: _addressController),
-          ),
-          FavoriteHospitalField(controller: _hospitalController),
-          const SizedBox(height: 14),
-          FilledButton(
-            onPressed: _busy ? null : _save,
-            child: _busy
-                ? SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Theme.of(context).colorScheme.onPrimary,
+              const SizedBox(height: 18),
+              _Field(controller: _nameController, label: '이름'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: PhoneNumberField(
+                  controller: _phoneController,
+                  textInputAction: TextInputAction.next,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DropdownButtonFormField<String>(
+                  initialValue: _relationship,
+                  decoration: const InputDecoration(
+                    labelText: '나와의 관계',
+                    constraints: BoxConstraints(minHeight: 60),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 17,
                     ),
-                  )
-                : const Text('저장하기'),
+                  ),
+                  items: [
+                    for (final option in _relationshipOptions)
+                      DropdownMenuItem(value: option, child: Text(option)),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _relationship = value);
+                  },
+                ),
+              ),
+              if (_relationship == '기타') ...[
+                _Field(
+                  controller: _customRelationshipController,
+                  label: '관계 직접 입력',
+                ),
+              ],
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: AddressField(controller: _addressController),
+              ),
+              FavoriteHospitalField(controller: _hospitalController),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _busy ? null : _save,
+                child: _busy
+                    ? SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      )
+                    : const Text('저장하기'),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -641,10 +646,17 @@ class _Field extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
         controller: controller,
-        decoration: InputDecoration(labelText: label),
+        decoration: InputDecoration(
+          labelText: label,
+          constraints: const BoxConstraints(minHeight: 60),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 17,
+          ),
+        ),
       ),
     );
   }

@@ -25,7 +25,15 @@ class PhoneNumberField extends StatelessWidget {
         FilteringTextInputFormatter.digitsOnly,
         const KoreanMobilePhoneFormatter(),
       ],
-      decoration: InputDecoration(labelText: label, hintText: hint),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        constraints: const BoxConstraints(minHeight: 60),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 17,
+        ),
+      ),
     );
   }
 }
