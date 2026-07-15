@@ -185,7 +185,6 @@ class _ErrandRequestSheetState extends ConsumerState<_ErrandRequestSheet> {
       distance: '내 주변',
       description: description,
       status: '모집중',
-      helperCount: 0,
       requesterUid: uid,
       requesterName: requesterName,
       createdAt: now,
@@ -413,11 +412,31 @@ String _timeAgo(DateTime time) {
   return '${time.year}.$m.$d';
 }
 
-class _ErrandCard extends StatelessWidget {
+class _ErrandCard extends ConsumerWidget {
   const _ErrandCard({required this.errand, required this.accent});
 
   final ErrandRequest errand;
   final Color accent;
+
+  Future<void> _apply(BuildContext context, WidgetRef ref, String uid) async {
+    try {
+      await ref.read(errandRequestsProvider.notifier).apply(errand.id, uid);
+      if (!context.mounted) return;
+      await showConfirmSheet(
+        context,
+        icon: Icons.volunteer_activism_rounded,
+        title: '지원했어요',
+        message: '요청자에게 지원 의사를 전달했어요.\n연결되면 알림으로 알려드릴게요.',
+      );
+    } on Object catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('지원에 실패했어요. 잠시 후 다시 시도해주세요.')),
+        );
+    }
+  }
 
   IconData get _icon {
     switch (errand.category) {
@@ -437,9 +456,11 @@ class _ErrandCard extends StatelessWidget {
   bool get _open => errand.status.isEmpty || errand.status == '모집중';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
     final text = Theme.of(context).textTheme;
+    final uid = ref.watch(currentUidProvider);
+    final applied = uid != null && errand.hasApplied(uid);
     return SoftCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -551,16 +572,18 @@ class _ErrandCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.tonalIcon(
-              onPressed: _open
-                  ? () => showConfirmSheet(
-                      context,
-                      icon: Icons.volunteer_activism_rounded,
-                      title: '지원했어요',
-                      message: '요청자에게 지원 의사를 전달했어요.\n연결되면 알림으로 알려드릴게요.',
-                    )
+              onPressed: (_open && !applied && uid != null)
+                  ? () => _apply(context, ref, uid)
                   : null,
-              icon: const Icon(Icons.volunteer_activism_rounded, size: 18),
-              label: Text(_open ? '지원하기' : '마감된 요청'),
+              icon: Icon(
+                applied
+                    ? Icons.check_rounded
+                    : Icons.volunteer_activism_rounded,
+                size: 18,
+              ),
+              label: Text(
+                applied ? '지원함' : (_open ? '지원하기' : '마감된 요청'),
+              ),
             ),
           ),
         ],

@@ -101,7 +101,7 @@ class ErrandRequest {
     required this.distance,
     required this.description,
     required this.status,
-    required this.helperCount,
+    this.helpers = const [],
     this.requesterUid = '',
     this.requesterName = '',
     this.createdAt,
@@ -116,9 +116,12 @@ class ErrandRequest {
       distance: json['distance'] as String? ?? '',
       description: json['description'] as String? ?? '',
       status: json['status'] as String? ?? '',
-      helperCount: json['helperCount'] is int
-          ? json['helperCount'] as int
-          : int.tryParse('${json['helperCount']}') ?? 0,
+      helpers:
+          (json['helpers'] as List?)
+              ?.map((value) => value.toString())
+              .where((value) => value.isNotEmpty)
+              .toList() ??
+          const [],
       requesterUid: json['requesterUid'] as String? ?? '',
       requesterName: json['requesterName'] as String? ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
@@ -132,10 +135,18 @@ class ErrandRequest {
   final String distance;
   final String description;
   final String status;
-  final int helperCount;
+
+  /// 지원한 사용자 uid 목록.
+  final List<String> helpers;
   final String requesterUid;
   final String requesterName;
   final DateTime? createdAt;
+
+  /// 지원자 수 ([helpers]에서 파생).
+  int get helperCount => helpers.length;
+
+  /// 해당 사용자가 이미 지원했는지.
+  bool hasApplied(String uid) => uid.isNotEmpty && helpers.contains(uid);
 
   Map<String, dynamic> toJson() {
     return {
@@ -146,6 +157,8 @@ class ErrandRequest {
       'distance': distance,
       'description': description,
       'status': status,
+      'helpers': helpers,
+      // 호환·쿼리용으로 파생값도 함께 저장한다(표시는 helpers.length 기준).
       'helperCount': helperCount,
       'requesterUid': requesterUid,
       'requesterName': requesterName,

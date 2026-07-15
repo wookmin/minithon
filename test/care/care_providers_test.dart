@@ -136,7 +136,7 @@ void main() {
       distance: '1.2km',
       description: '저녁 장보기가 필요해요.',
       status: '모집중',
-      helperCount: 1,
+      helpers: const ['helper-1'],
       createdAt: now.subtract(const Duration(hours: 2)),
     );
     await firestore
@@ -165,7 +165,6 @@ void main() {
       distance: '내 주변',
       description: '거실 전등이 나갔어요.',
       status: '모집중',
-      helperCount: 0,
       requesterUid: 'test-uid',
       requesterName: '홍길동',
       createdAt: now,

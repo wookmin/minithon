@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -180,6 +181,20 @@ class ErrandRequestsNotifier extends AsyncNotifier<List<ErrandRequest>> {
         .collection(FirestorePaths.errands)
         .doc(request.id)
         .set(request.toJson());
+    ref.invalidateSelf();
+    await future;
+  }
+
+  /// 도움 요청에 지원한다. 같은 uid의 중복 지원은 arrayUnion으로 자연히 무시된다.
+  Future<void> apply(String errandId, String uid) async {
+    if (errandId.isEmpty || uid.isEmpty) return;
+    await ref
+        .read(firebaseFirestoreProvider)
+        .collection(FirestorePaths.errands)
+        .doc(errandId)
+        .update({
+          'helpers': FieldValue.arrayUnion([uid]),
+        });
     ref.invalidateSelf();
     await future;
   }
