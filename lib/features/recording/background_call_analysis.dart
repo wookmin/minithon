@@ -158,7 +158,6 @@ Future<void> backgroundCallAnalysisMain() async {
     }
     debugPrint('[bg] STT 성공(${stt.text!.length}자) → 분류');
 
-    final me = await container.read(myProfileProvider.future);
     final result = await runNeedAnalysis(
       classifier: container.read(needClassifierProvider),
       history: container.read(analysisHistoryProvider.notifier),
@@ -166,11 +165,6 @@ Future<void> backgroundCallAnalysisMain() async {
       text: stt.text!,
       recipientName: matched.recipientName,
       callTime: matched.createdAt,
-      recipientRegion: matched.recipientRegion,
-      requesterUid: FirebaseAuth.instance.currentUser?.uid ?? '',
-      requesterName: me.name,
-      onErrandDraft: (draft) =>
-          container!.read(errandDraftsProvider.notifier).add(draft),
     );
     // 분류 실패는 처리 완료로 기록하지 않는다(다음 기회에 재시도).
     if (result.failed) {

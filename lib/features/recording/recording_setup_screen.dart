@@ -12,7 +12,6 @@ import '../analysis/analysis_history_providers.dart';
 import '../analysis/analysis_pipeline.dart';
 import '../classification/classification_providers.dart';
 import '../care/care_models.dart';
-import '../../core/firebase/firebase_providers.dart';
 import '../care/care_providers.dart';
 import '../classification/need_classification_result.dart';
 import 'audio_transcription_providers.dart';
@@ -100,8 +99,7 @@ class _RecordingSetupScreenState extends ConsumerState<RecordingSetupScreen> {
         _showMessage(result.error ?? '전사에 실패했어요');
         return;
       }
-      // 전사 → 분류 → 기록 저장 → (니즈 있으면) 알림 + 부모 지역 구인글 초안.
-      final me = ref.read(myProfileProvider).asData?.value;
+      // 전사 → 분류 → 기록 저장 → (니즈 있으면) 알림.
       final analysis = await runNeedAnalysis(
         classifier: ref.read(needClassifierProvider),
         history: ref.read(analysisHistoryProvider.notifier),
@@ -109,11 +107,6 @@ class _RecordingSetupScreenState extends ConsumerState<RecordingSetupScreen> {
         text: result.text!,
         recipientName: candidate.matchedRecipient?.name ?? '알 수 없음',
         callTime: candidate.createdAt,
-        recipientRegion: candidate.matchedRecipient?.address ?? '',
-        requesterUid: ref.read(currentUidProvider) ?? '',
-        requesterName: me?.name ?? '',
-        onErrandDraft: (draft) =>
-            ref.read(errandDraftsProvider.notifier).add(draft),
       );
       if (!mounted) return;
       if (analysis.failed) {
